@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 
+const API = '/server/index.php';
 
-//Icon spinner dùng chung cho nút loading
 const SpinnerIcon = () => (
     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -10,222 +11,241 @@ const SpinnerIcon = () => (
     </svg>
 );
 
-
-//Tính điểm độ mạnh mật khẩu (0 đến 4)
 const getStrength = (pw) => {
-    let score = 0;
-
-    if (pw.length >= 8)
-        score++;   // Cần ít nhất 8 ký tự
-
-    if (/[A-Z]/.test(pw))
-        score++;   // Cần ít nhất 1 chữ hoa
-
-    if (/[0-9]/.test(pw))
-        score++;   // Cần ít nhất 1 chữ số
-
-    if (/[^A-Za-z0-9]/.test(pw))
-        score++;   // Cần ít nhất 1 ký tự đặc biệt
-
-    return score;
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (/[A-Z]/.test(pw)) s++;
+    if (/[0-9]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return s;
 };
-
-// Cấu hình nhãn và màu tương ứng với từng mức độ mạnh
 const strengthConfig = [
-    { label: '', color: 'bg-gray-200' },  // 0: chưa nhập
-    { label: 'Yếu', color: 'bg-red-400' },  // 1
-    { label: 'Trung bình', color: 'bg-yellow-400' }, // 2
-    { label: 'Tốt', color: 'bg-blue-400' },  // 3
-    { label: 'Mạnh', color: 'bg-green-500' },  // 4
+    { label: '', color: 'bg-gray-200' },
+    { label: 'Yếu', color: 'bg-red-400' },
+    { label: 'Trung bình', color: 'bg-yellow-400' },
+    { label: 'Tốt', color: 'bg-blue-400' },
+    { label: 'Mạnh', color: 'bg-green-500' },
 ];
 
+const INDUSTRIES = [
+    'Công nghệ thông tin', 'Marketing / PR', 'Thiết kế', 'Kế toán / Kiểm toán',
+    'Kinh doanh / Bán hàng', 'Nhân sự', 'Dịch vụ khách hàng', 'Xây dựng',
+    'Giáo dục / Đào tạo', 'Y tế / Dược', 'Logistics / Vận tải', 'Khác',
+];
 
-//Trang đăng ký
-const RegisterPage = () => {
-    const navigate = useNavigate();
-
+// ── Bước 1: Thông tin cơ bản ───────────────────────────────────────────────
+const StepInfo = ({ onNext }) => {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
-    const [fullNameError, setFullNameError] = useState('');
-    const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
-    const [confirmError, setConfirmError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [serverError, setServerError] = useState('');
 
-    const handleFullNameChange = (e) => {
-        setFullName(e.target.value);
-        setFullNameError('');
-    };
-
-    const handleEmailChange = (e) => {
-        setEmail(e.target.value);
-        setEmailError('');
-    };
-
-    const handlePasswordChange = (e) => {
-        setPassword(e.target.value);
-        setPasswordError('');
-    };
-
-    const handleConfirmChange = (e) => {
-        setConfirm(e.target.value);
-        setConfirmError('');
-    };
-
-    // Kiểm tra hợp lệ, trả về true nếu không có lỗi
     const validate = () => {
-        let isValid = true;
-
-        if (!fullName.trim()) {
-            setFullNameError('Vui lòng nhập họ và tên.');
-            isValid = false;
-        }
-
-        if (!email.trim()) {
-            setEmailError('Vui lòng nhập email.');
-            isValid = false;
-        } else {
-            const emailRegex = /\S+@\S+\.\S+/;
-            const emailIsValid = emailRegex.test(email);
-
-            if (!emailIsValid) {
-                setEmailError('Email không hợp lệ.');
-                isValid = false;
-            }
-        }
-
-        if (!password) {
-            setPasswordError('Vui lòng nhập mật khẩu.');
-            isValid = false;
-        } else if (password.length < 8) {
-            setPasswordError('Mật khẩu tối thiểu 8 ký tự.');
-            isValid = false;
-        }
-
-        if (!confirm) {
-            setConfirmError('Vui lòng xác nhận mật khẩu.');
-            isValid = false;
-        } else if (confirm !== password) {
-            setConfirmError('Mật khẩu không khớp.');
-            isValid = false;
-        }
-
-        return isValid;
+        const e = {};
+        if (!fullName.trim()) e.fullName = 'Vui lòng nhập họ và tên.';
+        if (!email.trim()) e.email = 'Vui lòng nhập email.';
+        else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Email không hợp lệ.';
+        if (!password) e.password = 'Vui lòng nhập mật khẩu.';
+        else if (password.length < 8) e.password = 'Mật khẩu tối thiểu 8 ký tự.';
+        if (!confirm) e.confirm = 'Vui lòng xác nhận mật khẩu.';
+        else if (confirm !== password) e.confirm = 'Mật khẩu không khớp.';
+        setErrors(e);
+        return Object.keys(e).length === 0;
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
-
-        const isValid = validate();
-        if (!isValid) {
-            return;
-        }
-
-        setLoading(true);
-
-        // TODO: Gửi thông tin đăng ký lên server PHP để tạo tài khoản
-        // Cách làm:
-        //   1. Gửi POST request đến file PHP (ví dụ: /api/register.php)
-        //   2. Truyền họ tên, email và mật khẩu trong body dưới dạng JSON
-        //   3. PHP kiểm tra xem email đã tồn tại trong database chưa
-        //   4. Nếu chưa thì hash mật khẩu bằng password_hash() rồi lưu vào database
-        //   5. Sau đó gửi email xác nhận tài khoản bằng PHPMailer
-        //   6. Nếu thành công thì gọi setSuccess(true) để hiện màn hình thành công
-        //   7. Nếu thất bại (email trùng, lỗi server...) thì hiện lỗi và tắt loading
-
+        setServerError('');
+        if (validate()) onNext({ fullName, email, password });
     };
 
-    // Màn hình thành công sau khi đăng ký xong
-    if (success) {
-        const goToLogin = () => {
-            navigate('/login');
-        };
+    const inp = (field) => `w-full px-3 py-2.5 border rounded-lg text-sm outline-none transition-colors ${errors[field] ? 'border-red-400 bg-red-50' : 'border-gray-300 focus:border-purple-500'}`;
+    const strength = password ? getStrength(password) : 0;
 
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-linear-to-r from-purple-600 to-purple-400">
-                <div className="w-full max-w-md px-4">
-                    <div className="bg-white rounded-2xl p-8 shadow-xl text-center">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
+    return (
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+            {serverError && <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">{serverError}</div>}
+
+            <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Họ và tên</label>
+                <input type="text" placeholder="Nguyễn Văn A" className={inp('fullName')}
+                    value={fullName} onChange={e => { setFullName(e.target.value); setErrors(p => ({ ...p, fullName: '' })); }} autoComplete="name" />
+                {errors.fullName && <p className="text-xs text-red-500">{errors.fullName}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Email</label>
+                <input type="email" placeholder="example@email.com" className={inp('email')}
+                    value={email} onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '' })); }} autoComplete="email" />
+                {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Mật khẩu</label>
+                <input type="password" placeholder="Tối thiểu 8 ký tự" className={inp('password')}
+                    value={password} onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }} autoComplete="new-password" />
+                {password && (
+                    <div className="mt-1.5">
+                        <div className="flex gap-1">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= strength ? strengthConfig[strength].color : 'bg-gray-200'}`} />
+                            ))}
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Đăng ký thành công!</h2>
-                        <p className="text-gray-500 text-sm mb-6">
-                            Chào mừng <span className="font-medium text-gray-700">{fullName}</span> đến với JobHot!
-                        </p>
-                        <button
-                            onClick={goToLogin}
-                            className="w-full py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors cursor-pointer"
-                        >
-                            Đăng nhập ngay
-                        </button>
+                        {strength > 0 && <p className="text-xs mt-1 text-gray-500">Độ mạnh: <span className="font-medium">{strengthConfig[strength].label}</span></p>}
                     </div>
+                )}
+                {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Xác nhận mật khẩu</label>
+                <input type="password" placeholder="Nhập lại mật khẩu"
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm outline-none transition-colors ${errors.confirm ? 'border-red-400 bg-red-50' : confirm && confirm === password ? 'border-green-400' : 'border-gray-300 focus:border-purple-500'}`}
+                    value={confirm} onChange={e => { setConfirm(e.target.value); setErrors(p => ({ ...p, confirm: '' })); }} autoComplete="new-password" />
+                {errors.confirm && <p className="text-xs text-red-500">{errors.confirm}</p>}
+                {!errors.confirm && confirm && confirm === password && <p className="text-xs text-green-500">✓ Mật khẩu khớp</p>}
+            </div>
+
+            <button type="submit"
+                className="w-full py-2.5 mt-1 bg-purple-600 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-purple-700 transition-colors flex items-center justify-center gap-2">
+                Tiếp theo →
+            </button>
+        </form>
+    );
+};
+
+// ── Bước 2: Chọn loại tài khoản + ngành nghề ──────────────────────────────
+const StepRole = ({ onBack, onSubmit, loading, serverError }) => {
+    const [role, setRole] = useState('');
+    const [industry, setIndustry] = useState('');
+    const [error, setError] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!role) { setError('Vui lòng chọn loại tài khoản.'); return; }
+        onSubmit({ role, industry });
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {serverError && <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">{serverError}</div>}
+
+            <div>
+                <p className="text-sm font-medium text-gray-700 mb-3">Bạn đang tìm kiếm gì trên JobHot?</p>
+                <div className="grid grid-cols-2 gap-3">
+                    {/* Người tìm việc */}
+                    <button type="button" onClick={() => { setRole('user'); setError(''); }}
+                        className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all cursor-pointer ${role === 'user' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'}`}>
+                        <span className="text-4xl">🧑‍💼</span>
+                        <div className="text-center">
+                            <div className={`font-semibold text-sm ${role === 'user' ? 'text-purple-700' : 'text-gray-800'}`}>Người tìm việc</div>
+                            <div className="text-xs text-gray-500 mt-1">Tìm kiếm cơ hội nghề nghiệp</div>
+                        </div>
+                        {role === 'user' && <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs">✓</div>}
+                    </button>
+
+                    {/* Nhà tuyển dụng */}
+                    <button type="button" onClick={() => { setRole('employer'); setError(''); }}
+                        className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all cursor-pointer ${role === 'employer' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'}`}>
+                        <span className="text-4xl">🏢</span>
+                        <div className="text-center">
+                            <div className={`font-semibold text-sm ${role === 'employer' ? 'text-purple-700' : 'text-gray-800'}`}>Nhà tuyển dụng</div>
+                            <div className="text-xs text-gray-500 mt-1">Đăng tin và tìm ứng viên</div>
+                        </div>
+                        {role === 'employer' && <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs">✓</div>}
+                    </button>
+                </div>
+                {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+            </div>
+
+            {/* Ngành nghề — chỉ hiện cho người tìm việc */}
+            {role === 'user' && (
+                <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-gray-700">
+                        Ngành nghề quan tâm <span className="text-gray-400 font-normal">(để nhận gợi ý việc phù hợp)</span>
+                    </label>
+                    <select value={industry} onChange={e => setIndustry(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-purple-500 bg-white text-gray-700">
+                        <option value="">-- Chọn ngành nghề --</option>
+                        {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                    </select>
+                </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+                <button type="button" onClick={onBack}
+                    className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors">
+                    ← Quay lại
+                </button>
+                <button type="submit" disabled={loading}
+                    className="flex-1 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-purple-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    {loading && <SpinnerIcon />}
+                    {loading ? 'Đang tạo tài khoản...' : 'Hoàn tất đăng ký'}
+                </button>
+            </div>
+        </form>
+    );
+};
+
+// ── Main RegisterPage ──────────────────────────────────────────────────────
+const RegisterPage = () => {
+    const navigate = useNavigate();
+    const [step, setStep] = useState(1); // 1: thông tin, 2: role, 3: thành công
+    const [basicInfo, setBasicInfo] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [serverError, setServerError] = useState('');
+
+    const handleStep1Done = (info) => {
+        setBasicInfo(info);
+        setStep(2);
+    };
+
+    const handleFinalSubmit = async ({ role, industry }) => {
+        setLoading(true);
+        setServerError('');
+        try {
+            await axios.post(`${API}?action=register`, {
+                fullName: basicInfo.fullName,
+                email: basicInfo.email,
+                password: basicInfo.password,
+                role,
+                industry,
+            });
+            setStep(3);
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+            setServerError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const stepLabels = ['Thông tin', 'Loại tài khoản'];
+
+    // Màn hình thành công
+    if (step === 3) return (
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-r from-purple-600 to-purple-400">
+            <div className="w-full max-w-md px-4">
+                <div className="bg-white rounded-2xl p-8 shadow-xl text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Đăng ký thành công!</h2>
+                    <p className="text-gray-500 text-sm mb-6">
+                        Chào mừng <span className="font-medium text-gray-700">{basicInfo?.fullName}</span> đến với JobHot!
+                    </p>
+                    <button onClick={() => navigate('/login')}
+                        className="w-full py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors cursor-pointer">
+                        Đăng nhập ngay
+                    </button>
                 </div>
             </div>
-        );
-    }
-
-    // Tính độ mạnh mật khẩu (chỉ tính khi đã nhập)
-    let strength = 0;
-    if (password) {
-        strength = getStrength(password);
-    }
-
-    // Xác định class viền cho ô họ tên
-    let fullNameInputClass = 'w-full px-3 py-2.5 border rounded-lg text-sm outline-none transition-colors ';
-
-    if (fullNameError) {
-        fullNameInputClass = fullNameInputClass + 'border-red-400 focus:border-red-500 bg-red-50';
-    } else {
-        fullNameInputClass = fullNameInputClass + 'border-gray-300 focus:border-purple-500';
-    }
-
-    // Xác định class viền cho ô email
-    let emailInputClass = 'w-full px-3 py-2.5 border rounded-lg text-sm outline-none transition-colors ';
-
-    if (emailError) {
-        emailInputClass = emailInputClass + 'border-red-400 focus:border-red-500 bg-red-50';
-    } else {
-        emailInputClass = emailInputClass + 'border-gray-300 focus:border-purple-500';
-    }
-
-    // Xác định class viền cho ô mật khẩu
-    let passwordInputClass = 'w-full px-3 py-2.5 border rounded-lg text-sm outline-none transition-colors ';
-
-    if (passwordError) {
-        passwordInputClass = passwordInputClass + 'border-red-400 focus:border-red-500 bg-red-50';
-    } else {
-        passwordInputClass = passwordInputClass + 'border-gray-300 focus:border-purple-500';
-    }
-
-    // Xác định class viền cho ô xác nhận mật khẩu
-    let confirmInputClass = 'w-full px-3 py-2.5 border rounded-lg text-sm outline-none transition-colors ';
-
-    if (confirmError) {
-        confirmInputClass = confirmInputClass + 'border-red-400 focus:border-red-500 bg-red-50';
-    } else if (confirm && confirm === password) {
-        confirmInputClass = confirmInputClass + 'border-green-400 focus:border-green-500';
-    } else {
-        confirmInputClass = confirmInputClass + 'border-gray-300 focus:border-purple-500';
-    }
-
-    // Xác định chữ hiển thị trên nút submit
-    let buttonText = 'Đăng ký';
-
-    if (loading) {
-        buttonText = 'Đang tạo tài khoản...';
-    }
-
-    // Kiểm tra có nên hiện thông báo "Mật khẩu khớp" không
-    let shouldShowMatchMessage = false;
-
-    if (!confirmError && confirm && confirm === password) {
-        shouldShowMatchMessage = true;
-    }
+        </div>
+    );
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-linear-to-r from-purple-600 to-purple-400 py-8">
@@ -236,97 +256,42 @@ const RegisterPage = () => {
                 </div>
 
                 <div className="bg-white rounded-2xl p-8 shadow-xl">
-                    <h1 className="text-2xl font-bold text-center mb-1 text-gray-800">Tạo tài khoản</h1>
-                    <p className="text-center text-gray-500 text-sm mb-6">Miễn phí hoàn toàn, mãi mãi</p>
-
-                    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-1">
-                            <label htmlFor="fullName" className="text-sm font-medium text-gray-700">Họ và tên</label>
-                            <input
-                                id="fullName"
-                                type="text"
-                                placeholder="Nguyễn Văn A"
-                                className={fullNameInputClass}
-                                value={fullName}
-                                onChange={handleFullNameChange}
-                                autoComplete="name"
-                            />
-                            {fullNameError && <p className="text-xs text-red-500">{fullNameError}</p>}
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                            <label htmlFor="reg-email" className="text-sm font-medium text-gray-700">Email</label>
-                            <input
-                                id="reg-email"
-                                type="email"
-                                placeholder="example@email.com"
-                                className={emailInputClass}
-                                value={email}
-                                onChange={handleEmailChange}
-                                autoComplete="email"
-                            />
-                            {emailError && <p className="text-xs text-red-500">{emailError}</p>}
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                            <label htmlFor="reg-password" className="text-sm font-medium text-gray-700">Mật khẩu</label>
-                            <input
-                                id="reg-password"
-                                type="password"
-                                placeholder="Tối thiểu 8 ký tự"
-                                className={passwordInputClass}
-                                value={password}
-                                onChange={handlePasswordChange}
-                                autoComplete="new-password"
-                            />
-
-                            {password && (
-                                <div className="mt-1.5">
-                                    <div className="flex gap-1">
-                                        {[1, 2, 3, 4].map((i) => {
-                                            // Ô nào có chỉ số <= điểm mạnh thì tô màu, còn lại để xám
-                                            let barColor = 'bg-gray-200';
-
-                                            if (i <= strength) {
-                                                barColor = strengthConfig[strength].color;
-                                            }
-                                            return <div key={i} className={'h-1 flex-1 rounded-full transition-colors ' + barColor} />;
-                                        })}
+                    {/* Progress steps */}
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                        {stepLabels.map((label, idx) => {
+                            const i = idx + 1;
+                            const active = step === i;
+                            const done = step > i;
+                            return (
+                                <div key={i} className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${done ? 'bg-green-500 text-white' : active ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                            {done ? '✓' : i}
+                                        </div>
+                                        <span className={`text-xs ${active ? 'text-purple-600 font-medium' : 'text-gray-400'}`}>{label}</span>
                                     </div>
-                                    {strength > 0 && (
-                                        <p className="text-xs mt-1 text-gray-500">
-                                            Độ mạnh: <span className="font-medium">{strengthConfig[strength].label}</span>
-                                        </p>
-                                    )}
+                                    {idx < stepLabels.length - 1 && <div className={`w-8 h-px ${step > i ? 'bg-green-400' : 'bg-gray-200'}`} />}
                                 </div>
-                            )}
-                            {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
-                        </div>
+                            );
+                        })}
+                    </div>
 
-                        <div className="flex flex-col gap-1">
-                            <label htmlFor="confirm" className="text-sm font-medium text-gray-700">Xác nhận mật khẩu</label>
-                            <input
-                                id="confirm"
-                                type="password"
-                                placeholder="Nhập lại mật khẩu"
-                                className={confirmInputClass}
-                                value={confirm}
-                                onChange={handleConfirmChange}
-                                autoComplete="new-password"
-                            />
-                            {confirmError && <p className="text-xs text-red-500">{confirmError}</p>}
-                            {shouldShowMatchMessage && <p className="text-xs text-green-500">✓ Mật khẩu khớp</p>}
-                        </div>
+                    <h1 className="text-2xl font-bold text-center mb-1 text-gray-800">
+                        {step === 1 ? 'Tạo tài khoản' : 'Bạn là ai?'}
+                    </h1>
+                    <p className="text-center text-gray-500 text-sm mb-6">
+                        {step === 1 ? 'Miễn phí hoàn toàn, mãi mãi' : 'Giúp chúng tôi cá nhân hoá trải nghiệm của bạn'}
+                    </p>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-2.5 mt-1 bg-purple-600 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-purple-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {loading && <SpinnerIcon />}
-                            {buttonText}
-                        </button>
-                    </form>
+                    {step === 1 && <StepInfo onNext={handleStep1Done} />}
+                    {step === 2 && (
+                        <StepRole
+                            onBack={() => setStep(1)}
+                            onSubmit={handleFinalSubmit}
+                            loading={loading}
+                            serverError={serverError}
+                        />
+                    )}
 
                     <p className="text-center text-sm text-gray-500 mt-6">
                         Đã có tài khoản?{' '}

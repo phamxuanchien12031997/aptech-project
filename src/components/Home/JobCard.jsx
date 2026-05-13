@@ -1,43 +1,50 @@
+import { useState } from 'react';
+
 const JobCard = ({ job }) => {
+    const [saved, setSaved] = useState(false);
+    const urgent = job.daysLeft <= 7;
+
     return (
-        <div className="h-full cursor-pointer transition-all bg-white rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1">
-            <div className="relative p-4">
-                <div className="absolute top-2 right-2 cursor-pointer text-gray-400 hover:text-red-500 transition-colors">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path
-                            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
+        <div className="group h-full cursor-pointer bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col">
+            {urgent && (
+                <div className="bg-red-500 text-white text-xs font-semibold text-center py-1">
+                    ⚡ Sắp hết hạn - còn {job.daysLeft} ngày
+                </div>
+            )}
+            <div className="p-4 flex flex-col flex-1">
+                {/* Bookmark */}
+                <div className="flex justify-between items-start mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center overflow-hidden border border-purple-100 shrink-0">
+                        {job.logo
+                            ? <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
+                            : <span className="text-xl font-bold text-purple-600">{job.company.charAt(0)}</span>
+                        }
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); setSaved(v => !v); }}
+                        className={`transition-colors text-lg leading-none ${saved ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}>
+                        {saved ? '❤️' : '🤍'}
+                    </button>
                 </div>
 
-                <div className="w-15 h-15 rounded-lg bg-gray-100 flex items-center justify-center mb-4 overflow-hidden">
-                    {job.logo ? (
-                        <img src={job.logo} alt={job.company} className="w-full h-full object-cover" />
-                    ) : (
-                        <span className="text-2xl font-bold text-purple-600">{job.company.charAt(0)}</span>
-                    )}
-                </div>
-
-                <h3 className="font-bold text-base mb-2 text-gray-800 line-clamp-2 leading-snug">
+                <h3 className="font-bold text-sm mb-1 text-gray-800 line-clamp-2 leading-snug group-hover:text-purple-700 transition-colors">
                     {job.title}
                 </h3>
-                <p className="text-sm text-gray-600 mb-2">{job.company}</p>
-                <p className="text-sm text-green-600 font-semibold mb-2">{job.salary}</p>
+                <p className="text-xs text-gray-500 mb-3">{job.company}</p>
 
-                <div className="flex items-center gap-1 text-sm text-gray-600 mb-4">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                    </svg>
-                    <span>{job.location}</span>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                    <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-medium">
+                        💰 {job.salary}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                        📍 {job.location}
+                    </span>
                 </div>
 
-                <div className="flex justify-between items-center mt-4">
-                    <span className="text-xs px-3 py-1 bg-gray-100 rounded-xl text-gray-600">
+                <div className="mt-auto flex justify-between items-center pt-3 border-t border-gray-100">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${urgent ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
                         Còn {job.daysLeft} ngày
                     </span>
+                    <button className="text-xs text-purple-600 font-semibold hover:underline">Xem →</button>
                 </div>
             </div>
         </div>
