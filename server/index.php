@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// ── Config ────────────────────────────────────────────────────────────────
+//Config
 define('DB_HOST',        'localhost');
 define('DB_NAME',        'jobhot');
 define('DB_USER',        'root');
@@ -33,7 +33,7 @@ define('ADMIN_EMAIL',    'admin@jobhot.vn');
 define('ADMIN_PASSWORD', 'Admin@123');
 define('ADMIN_NAME',     'Quản trị viên JobHot');
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+//Helpers
 function respond(bool $ok, string $msg, array $data = [], int $code = 200): void
 {
     http_response_code($code);
@@ -125,7 +125,7 @@ function sendOtpEmail(string $to, string $otp): bool
     return mail($to, 'Mã xác nhận JobHot', "Mã OTP: $otp (có hiệu lực 5 phút)", 'From:' . MAIL_FROM);
 }
 
-// ── Router ────────────────────────────────────────────────────────────────
+//Router
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') respond(false, 'Chỉ hỗ trợ POST.', [], 405);
 $body = json_decode(file_get_contents('php://input'), true);
 if (!is_array($body)) respond(false, 'Body JSON không hợp lệ.', [], 400);
