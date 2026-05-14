@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 
-// ── Dữ liệu giả ──────────────────────────────────────────────────────────────
 const MOCK_JOBS = [
     {
         id: "JB001",
@@ -154,7 +153,7 @@ const JOB_TYPES = ["Tất cả", "Full-time", "Part-time", "Freelancer", "Thực
 const LOCATIONS = ["Tất cả", "Hà Nội", "Hồ Chí Minh", "Đà Nẵng"];
 
 
-// ── Helper: Lấy 2 chữ cái đầu của 2 từ cuối trong tên ────────────────────────
+//Helper: Lấy 2 chữ cái đầu của 2 từ cuối trong tên
 const initials = (name) => {
     const words = name.split(" ");
     const lastTwo = words.slice(-2);
@@ -166,7 +165,7 @@ const initials = (name) => {
 };
 
 
-// ── Helper: Tính số ngày còn lại đến deadline ────────────────────────────────
+//Helper: Tính số ngày còn lại đến deadline
 const daysLeft = (deadline) => {
     const diff = new Date(deadline) - new Date();
     const days = Math.ceil(diff / 86400000);
@@ -177,7 +176,7 @@ const daysLeft = (deadline) => {
 };
 
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
+//Sidebar
 const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef();
@@ -324,7 +323,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
 };
 
 
-// ── JobCard ───────────────────────────────────────────────────────────────────
+//JobCard
 const JobCard = ({ job, saved, onSave, onView }) => {
     const days = daysLeft(job.deadline);
 
@@ -423,7 +422,7 @@ const JobCard = ({ job, saved, onSave, onView }) => {
 };
 
 
-// ── Jobs Tab ──────────────────────────────────────────────────────────────────
+//Jobs Tab
 const JobsTab = ({ savedIds, onSave, onView }) => {
     const [keyword, setKeyword] = useState("");
     const [sort, setSort] = useState("newest");
@@ -646,7 +645,7 @@ const JobsTab = ({ savedIds, onSave, onView }) => {
 };
 
 
-// ── Job Detail Modal ──────────────────────────────────────────────────────────
+//Job Detail Modal
 const JobDetailModal = ({ job, saved, onSave, onClose, onApply }) => {
     if (!job) return null;
 
@@ -743,7 +742,7 @@ const JobDetailModal = ({ job, saved, onSave, onClose, onApply }) => {
 };
 
 
-// ── Apply Modal ───────────────────────────────────────────────────────────────
+//Apply Modal
 const ApplyModal = ({ job, onClose }) => {
     const [name, setName] = useState("Nguyễn Văn A");
     const [email, setEmail] = useState("ngvana@email.com");
@@ -899,7 +898,7 @@ const ApplyModal = ({ job, onClose }) => {
 };
 
 
-// ── Saved Tab ─────────────────────────────────────────────────────────────────
+//Saved Tab
 const SavedTab = ({ savedIds, onSave, onView }) => {
     // Lọc ra chỉ những việc làm đã được lưu
     const savedJobs = MOCK_JOBS.filter(j => savedIds.has(j.id));
@@ -929,7 +928,7 @@ const SavedTab = ({ savedIds, onSave, onView }) => {
 };
 
 
-// ── Profile Tab ───────────────────────────────────────────────────────────────
+//Profile Tab
 const ProfileTab = () => {
     const [profile, setProfile] = useState({
         name: "Nguyễn Văn A",
@@ -1182,7 +1181,7 @@ const ProfileTab = () => {
 };
 
 
-// ── App Root ──────────────────────────────────────────────────────────────────
+//App Root
 export default function JobSeekerDashboard() {
     const [activeTab, setActiveTab] = useState("jobs");
     const [savedIds, setSavedIds] = useState(new Set());

@@ -33,7 +33,7 @@ const INDUSTRIES = [
     'Giáo dục / Đào tạo', 'Y tế / Dược', 'Logistics / Vận tải', 'Khác',
 ];
 
-// ── Bước 1: Thông tin cơ bản ───────────────────────────────────────────────
+//Thông tin cơ bản
 const StepInfo = ({ onNext }) => {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
@@ -116,7 +116,7 @@ const StepInfo = ({ onNext }) => {
     );
 };
 
-// ── Bước 2: Chọn loại tài khoản + ngành nghề ──────────────────────────────
+//Chọn loại tài khoản + ngành nghề
 const StepRole = ({ onBack, onSubmit, loading, serverError }) => {
     const [role, setRole] = useState('');
     const [industry, setIndustry] = useState('');
@@ -189,7 +189,7 @@ const StepRole = ({ onBack, onSubmit, loading, serverError }) => {
     );
 };
 
-// ── Main RegisterPage ──────────────────────────────────────────────────────
+//Main RegisterPage
 const RegisterPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1); // 1: thông tin, 2: role, 3: thành công

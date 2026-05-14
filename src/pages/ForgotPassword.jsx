@@ -11,7 +11,7 @@ const SpinnerIcon = () => (
     </svg>
 );
 
-// ── Bước 1: Nhập email ────────────────────────────────────────────────────
+// Nhập email
 const Email = ({ onNext }) => {
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
@@ -51,7 +51,7 @@ const Email = ({ onNext }) => {
     );
 };
 
-// ── Bước 2: Nhập OTP ─────────────────────────────────────────────────────
+// Nhập OTP
 const OTP = ({ email, onNext }) => {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [error, setError] = useState('');
@@ -145,7 +145,7 @@ const OTP = ({ email, onNext }) => {
     );
 };
 
-// ── Bước 3: Mật khẩu mới ─────────────────────────────────────────────────
+//Mật khẩu mới
 const NewPassword = ({ email, onDone }) => {
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
@@ -205,7 +205,7 @@ const NewPassword = ({ email, onDone }) => {
     );
 };
 
-// ── Main ForgotPasswordPage ───────────────────────────────────────────────
+//Main ForgotPasswordPage
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(0);

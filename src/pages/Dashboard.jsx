@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// ── Mock data ──────────────────────────────────────────────────────────────
 const MOCK_USERS = [
     { id: 1, name: 'Nguyễn Văn A', email: 'a@email.com', role: 'user', joined: '2026-05-01', status: 'active' },
     { id: 2, name: 'Trần Thị B', email: 'b@email.com', role: 'employer', joined: '2026-05-02', status: 'active' },
@@ -17,7 +16,7 @@ const MOCK_JOBS = [
     { id: 'JP004', title: 'Kỹ Sư Dữ Liệu', company: 'Samsung Vina', status: 'active', applicants: 9, posted: '2026-05-05' },
 ];
 
-// ── Sub-components ─────────────────────────────────────────────────────────
+//Sub-components
 const StatCard = ({ label, value, icon, color, bg }) => (
     <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
         <div className="flex justify-between items-start">
@@ -52,7 +51,7 @@ const JobStatusBadge = ({ status }) => {
 
 const fmtDate = d => new Date(d).toLocaleDateString('vi-VN');
 
-// ── Tabs ───────────────────────────────────────────────────────────────────
+//Tabs
 const OverviewTab = ({ users, jobs }) => {
     const stats = [
         { label: 'Tổng người dùng', value: users.length, icon: '👥', color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -238,7 +237,7 @@ const JobsTab = ({ jobs, setJobs }) => {
     );
 };
 
-// ── Main Dashboard ─────────────────────────────────────────────────────────
+//Main Dashboard
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
