@@ -13,7 +13,7 @@ const MOCK_JOBS = [
         deadline: "2026-06-15",
         posted: "2026-05-01",
         status: "active",
-        applicants: 14
+        applicants: 14,
     },
     {
         id: "JP002",
@@ -27,7 +27,7 @@ const MOCK_JOBS = [
         deadline: "2026-05-30",
         posted: "2026-05-02",
         status: "active",
-        applicants: 7
+        applicants: 7,
     },
     {
         id: "JP003",
@@ -41,7 +41,7 @@ const MOCK_JOBS = [
         deadline: "2026-06-25",
         posted: "2026-05-06",
         status: "closed",
-        applicants: 22
+        applicants: 22,
     },
 ];
 
@@ -172,7 +172,8 @@ const MOCK_TALENT_POOL = [
         position: "React Developer",
         experience: "1-2 năm",
         skills: ["React", "JavaScript", "CSS", "Redux"],
-        location: "Đà Nẵng", email: "nga@email.com"
+        location: "Đà Nẵng",
+        email: "nga@email.com"
     },
     {
         id: "T005",
@@ -194,19 +195,15 @@ const MOCK_TALENT_POOL = [
     },
 ];
 
-// DATA: DROPDOWN OPTIONS
-// Used in the job form and talent search filters.
-
+//Dropdown options
 const CATEGORIES = ["Công nghệ thông tin", "Marketing / PR", "Thiết kế", "Kế toán / Kiểm toán", "Kinh doanh / Bán hàng", "Nhân sự", "Dịch vụ khách hàng"];
 const JOB_TYPES = ["Full-time", "Part-time", "Freelancer", "Thực tập"];
 const LOCATIONS = ["Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ"];
 const EXPERIENCES = ["Không yêu cầu", "Dưới 1 năm", "1-2 năm", "2-3 năm", "3-5 năm", "Trên 5 năm"];
 const COMPANY_SIZES = ["1-10 nhân viên", "10-50 nhân viên", "50-100 nhân viên", "100-500 nhân viên", "Trên 500 nhân viên"];
 
-// DATA: STATUS CONFIG
+//  Candidate status config
 // Maps a candidate status string to its display label and badge colors.
-// Used by the Badge component and status dropdowns.
-
 const STATUS_CONFIG = {
     new: { label: "Mới", bg: "#eff6ff", color: "#1d4ed8" },
     reviewing: { label: "Đang xem xét", bg: "#fefce8", color: "#854d0e" },
@@ -214,28 +211,40 @@ const STATUS_CONFIG = {
     rejected: { label: "Từ chối", bg: "#fff1f2", color: "#be123c" },
 };
 
-// DATA: SHARED INLINE STYLES
-// Reused style objects so the same input/label style is not
-// copy-pasted on every field.
-
+//  Shared inline styles 
 // Base style for all text inputs and selects
 const inputStyle = {
-    width: "100%",
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1px solid #e5e7eb",
-    fontSize: 13,
-    outline: "none",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    color: "#111827",
+    width: "100%", padding: "9px 12px", borderRadius: 8,
+    border: "1px solid #e5e7eb", fontSize: 13, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
 };
 
-// HELPER: getInitials
+// Same as inputStyle but with resize for textareas
+const textareaStyle = {
+    width: "100%", padding: "9px 12px", borderRadius: 8,
+    border: "1px solid #e5e7eb", fontSize: 13, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+    resize: "vertical",
+};
+
+// Same as inputStyle but width:auto for inline selects (filter dropdowns)
+const autoSelectStyle = {
+    width: "auto", padding: "9px 12px", borderRadius: 8,
+    border: "1px solid #e5e7eb", fontSize: 13, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+};
+
+// Smaller version of autoSelectStyle used for the status dropdown inside candidate rows
+const smallSelectStyle = {
+    width: "auto", padding: "6px 10px", borderRadius: 8,
+    border: "1px solid #e5e7eb", fontSize: 12, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+};
+
+//  Helpers
+
 // Returns the first letter of the last two words of a name, uppercased.
 // Example: "Nguyễn Thị Bình" → "TB"
-// Used for avatar placeholders.
-
 function getInitials(name) {
     const words = name.split(" ");
     const lastTwo = words.slice(-2);
@@ -243,34 +252,24 @@ function getInitials(name) {
     return letters.join("").toUpperCase();
 }
 
-// HELPER: getDaysLeft
-// Returns how many days remain until the given date string.
-// Returns 0 if the deadline has already passed.
-
+// Returns how many days remain until the given date string (minimum 0).
 function getDaysLeft(dateString) {
     const deadline = new Date(dateString);
     const now = new Date();
     const diff = deadline - now;
-    const days = Math.ceil(diff / 86400000);  // 86400000 ms = 1 day
-
+    const days = Math.ceil(diff / 86400000); // 86400000 ms = 1 day
     if (days < 0) {
         return 0;
     }
-
     return days;
 }
 
-// HELPER: formatDate
 // Formats a date string into Vietnamese locale format (DD/MM/YYYY).
-
 function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString("vi-VN");
 }
 
-// HELPER: getAvatarColor
-// Picks a consistent color for an avatar based on the first character
-// of the person's name. Same name always gets the same color.
-
+// Picks a consistent avatar color based on the first character of a name.
 const AVATAR_COLORS = ["#7c3aed", "#0369a1", "#0f766e", "#b45309", "#be185d", "#6d28d9"];
 
 function getAvatarColor(name) {
@@ -278,9 +277,7 @@ function getAvatarColor(name) {
     return AVATAR_COLORS[index];
 }
 
-// HELPER: getSectionTitle
-// Returns a styled <h3> element used as a section heading inside panels.
-
+// Returns a styled <h3> section heading element.
 function getSectionTitle(text) {
     return (
         <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: 0.5, paddingBottom: 8, borderBottom: "1px solid #f3f4f6" }}>
@@ -289,9 +286,7 @@ function getSectionTitle(text) {
     );
 }
 
-// HELPER: getFieldLabel
 // Returns a styled <label> element used above form inputs.
-
 function getFieldLabel(text) {
     return (
         <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>
@@ -300,10 +295,7 @@ function getFieldLabel(text) {
     );
 }
 
-// HELPER: getJobStatusStyle
 // Returns the inline style object for a job status badge pill.
-// Active jobs get a green pill, closed jobs get a gray pill.
-
 function getJobStatusStyle(status) {
     const base = { fontSize: 11, padding: "3px 8px", borderRadius: 20, fontWeight: 600 };
 
@@ -318,128 +310,115 @@ function getJobStatusStyle(status) {
     return base;
 }
 
-// HELPER: getJobStatusLabel
-// Returns display label for a job status string.
-
+// Returns the display label for a job status string.
 function getJobStatusLabel(status) {
     if (status === "active") {
         return "Đang tuyển";
-    } else {
-        return "Đã đóng";
     }
+    return "Đã đóng";
 }
 
-// HELPER: getToggleButtonLabel
 // Returns the label for the open/close toggle button on a job card.
-
 function getToggleButtonLabel(status) {
     if (status === "active") {
         return "Đóng tin";
-    } else {
-        return "Mở lại";
     }
+    return "Mở lại";
 }
 
-// HELPER: getSidebarTabStyle
-// Returns the inline style object for a sidebar navigation button.
-// Active tab gets a purple highlight background, others are transparent.
-
+// Returns the inline style for a sidebar navigation button.
 function getSidebarTabStyle(isActive) {
-    return {
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "10px 12px",
-        borderRadius: 8,
-        border: "none",
-        cursor: "pointer",
-        textAlign: "left",
-        fontSize: 13.5,
-        fontWeight: isActive ? 600 : 400,
-        background: isActive ? "#f5f3ff" : "transparent",
-        color: isActive ? "#7c3aed" : "#374151",
-        marginBottom: 3,
-        transition: "all 0.15s",
+    const style = {
+        width: "100%", display: "flex", alignItems: "center", gap: 10,
+        padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+        textAlign: "left", fontSize: 13.5, marginBottom: 3, transition: "all 0.15s",
     };
+
+    if (isActive) {
+        style.fontWeight = 600;
+        style.background = "#f5f3ff";
+        style.color = "#7c3aed";
+    } else {
+        style.fontWeight = 400;
+        style.background = "transparent";
+        style.color = "#374151";
+    }
+
+    return style;
 }
 
-// HELPER: getFilterButtonStyle
-// Returns the inline style object for the filter pill buttons
-// (e.g. "Tất cả / Đang tuyển / Đã đóng" in the Jobs tab).
-
+// Returns the inline style for the filter pill buttons (e.g. "Tất cả / Đang tuyển / Đã đóng").
 function getFilterButtonStyle(isActive) {
-    return {
-        padding: "7px 16px",
-        borderRadius: 20,
-        border: isActive ? "1px solid #7c3aed" : "1px solid #e5e7eb",
-        background: isActive ? "#f5f3ff" : "#fff",
-        color: isActive ? "#7c3aed" : "#6b7280",
-        fontSize: 13,
-        fontWeight: isActive ? 600 : 400,
-        cursor: "pointer",
-    };
+    const style = { padding: "7px 16px", borderRadius: 20, fontSize: 13, cursor: "pointer" };
+
+    if (isActive) {
+        style.border = "1px solid #7c3aed";
+        style.background = "#f5f3ff";
+        style.color = "#7c3aed";
+        style.fontWeight = 600;
+    } else {
+        style.border = "1px solid #e5e7eb";
+        style.background = "#fff";
+        style.color = "#6b7280";
+        style.fontWeight = 400;
+    }
+
+    return style;
 }
 
-// HELPER: getSubmitButtonStyle
 // Returns the inline style for the primary save/submit button inside a modal.
-// Gray when loading (disabled), purple when ready.
-
 function getSubmitButtonStyle(isLoading) {
-    return {
-        flex: 1,
-        padding: "11px",
-        borderRadius: 10,
-        border: "none",
-        background: isLoading ? "#c4b5fd" : "#7c3aed",
-        color: "#fff",
-        fontSize: 14,
-        fontWeight: 600,
-        cursor: isLoading ? "not-allowed" : "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
+    const style = {
+        flex: 1, padding: "11px", borderRadius: 10, border: "none",
+        color: "#fff", fontSize: 14, fontWeight: 600,
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
     };
+
+    if (isLoading) {
+        style.background = "#c4b5fd";
+        style.cursor = "not-allowed";
+    } else {
+        style.background = "#7c3aed";
+        style.cursor = "pointer";
+    }
+
+    return style;
 }
 
-// HELPER: getMenuToggleButtonStyle
-// Returns the inline style for the user menu button at the bottom
-// of the sidebar. Gets a border/background when the menu is open.
-
+// Returns the inline style for the user menu button at the bottom of the sidebar.
 function getMenuToggleButtonStyle(isOpen) {
-    return {
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "8px 10px",
-        borderRadius: 8,
-        border: isOpen ? "1px solid #e5e7eb" : "1px solid transparent",
-        background: isOpen ? "#f9fafb" : "transparent",
-        cursor: "pointer",
-        transition: "all 0.15s",
+    const style = {
+        width: "100%", display: "flex", alignItems: "center", gap: 10,
+        padding: "8px 10px", borderRadius: 8, cursor: "pointer", transition: "all 0.15s",
     };
+
+    if (isOpen) {
+        style.border = "1px solid #e5e7eb";
+        style.background = "#f9fafb";
+    } else {
+        style.border = "1px solid transparent";
+        style.background = "transparent";
+    }
+
+    return style;
 }
 
-// HELPER: getChevronStyle
 // Returns the style for the small triangle arrow on the user menu button.
-// Rotates 180° when the menu is open (pointing down → pointing up).
-
 function getChevronStyle(isOpen) {
-    return {
-        fontSize: 10,
-        color: "#9ca3af",
-        transition: "transform 0.2s",
-        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-        flexShrink: 0,
-    };
+    const style = { fontSize: 10, color: "#9ca3af", transition: "transform 0.2s", flexShrink: 0 };
+
+    if (isOpen) {
+        style.transform = "rotate(180deg)";
+    } else {
+        style.transform = "rotate(0deg)";
+    }
+
+    return style;
 }
 
-// COMPONENT: Badge
-// A small colored pill showing a candidate's current status.
-// Looks up the label and colors from STATUS_CONFIG.
+//  Shared components
 
+// A small colored pill showing a candidate's current status.
 function Badge({ status }) {
     let config = STATUS_CONFIG[status];
 
@@ -449,20 +428,14 @@ function Badge({ status }) {
     }
 
     const style = {
-        fontSize: 11,
-        padding: "3px 10px",
-        borderRadius: 20,
-        background: config.bg,
-        color: config.color,
-        fontWeight: 600,
+        fontSize: 11, padding: "3px 10px", borderRadius: 20,
+        background: config.bg, color: config.color, fontWeight: 600,
     };
 
     return <span style={style}>{config.label}</span>;
 }
 
-// COMPONENT: EmptyState
 // Shown in the center of a tab when there is no data to display.
-
 function EmptyState({ icon, title, sub }) {
     return (
         <div style={{ textAlign: "center", padding: "80px 0", color: "#9ca3af" }}>
@@ -473,24 +446,19 @@ function EmptyState({ icon, title, sub }) {
     );
 }
 
-// COMPONENT: SpinnerDot
 // A small CSS-animated spinning circle shown inside buttons while saving.
-
 function SpinnerDot() {
     return (
         <span style={{
-            display: "inline-block",
-            width: 14,
-            height: 14,
-            border: "2px solid rgba(255,255,255,0.4)",
-            borderTopColor: "#fff",
-            borderRadius: "50%",
-            animation: "spin 0.7s linear infinite",
+            display: "inline-block", width: 14, height: 14,
+            border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff",
+            borderRadius: "50%", animation: "spin 0.7s linear infinite",
         }} />
     );
 }
 
-// COMPONENT: Sidebar
+
+//  Sidebar
 // The left navigation panel. Shows the app logo, nav tabs, and a user menu.
 //
 // Props:
@@ -512,9 +480,7 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
                 setMenuOpen(false);
             }
         }
-
         document.addEventListener("mousedown", handleClickOutside);
-
         return function () {
             document.removeEventListener("mousedown", handleClickOutside);
         };
@@ -528,9 +494,7 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
         { id: "company", icon: "🏢", label: "Thông tin công ty" },
     ];
 
-
-    //Toggle menu open/closed
-
+    // Bật/tắt dropdown menu người dùng
     function handleMenuToggle() {
         if (menuOpen) {
             setMenuOpen(false);
@@ -539,21 +503,17 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
         }
     }
 
-    //Go to company tab from the user menu 
-
+    // Đi đến tab thông tin công ty từ menu người dùng
     function handleGoToCompany() {
         setActiveTab("company");
         setMenuOpen(false);
     }
 
-    //Logout from the user menu
-
+    // Đăng xuất từ menu người dùng
     function handleLogout() {
         setMenuOpen(false);
         onLogout();
     }
-
-    //Render
 
     return (
         <aside style={{ width: 224, flexShrink: 0, background: "#fff", borderRight: "1px solid #e5e7eb", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -568,7 +528,6 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
             <nav style={{ flex: 1, padding: "12px 12px" }}>
                 {tabs.map(function (tab) {
                     const isActive = activeTab === tab.id;
-
                     return (
                         <button
                             key={tab.id}
@@ -636,9 +595,8 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
     );
 }
 
-// COMPONENT: OverviewTab
-// The dashboard home screen. Shows four stat cards and two
-// "recent items" panels (jobs and candidates).
+//  OverviewTab 
+// The dashboard home screen. Shows four stat cards and two recent-items panels.
 //
 // Props:
 //   jobs         - full jobs array from root state
@@ -660,12 +618,24 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
         { label: "Tiềm năng", value: shortlistedCount, icon: "⭐", color: "#15803d", bg: "#f0fdf4" },
     ];
 
+    // Lấy 3 tin gần nhất để hiển thị
+    const recentJobs = [];
+    for (let i = 0; i < 3 && i < jobs.length; i++) {
+        recentJobs.push(jobs[i]);
+    }
+
+    // Lấy 4 ứng viên gần nhất để hiển thị
+    const recentCandidates = [];
+    for (let i = 0; i < 4 && i < candidates.length; i++) {
+        recentCandidates.push(candidates[i]);
+    }
+
     return (
         <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Tổng quan</h2>
             <p style={{ margin: "0 0 24px", fontSize: 13, color: "#6b7280" }}>Chào mừng trở lại! Đây là tình hình tuyển dụng hôm nay.</p>
 
-            {/*  Four stat cards  */}
+            {/* Four stat cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
                 {stats.map(function (stat) {
                     return (
@@ -684,7 +654,7 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
                 })}
             </div>
 
-            {/*  Two recent-items panels side by side  */}
+            {/* Two recent-items panels side by side */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
 
                 {/* Recent jobs panel */}
@@ -695,7 +665,7 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
                             Xem tất cả →
                         </button>
                     </div>
-                    {jobs.slice(0, 3).map(function (job) {
+                    {recentJobs.map(function (job) {
                         return (
                             <div key={job.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f9fafb" }}>
                                 <div>
@@ -718,7 +688,7 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
                             Xem tất cả →
                         </button>
                     </div>
-                    {candidates.slice(0, 4).map(function (candidate) {
+                    {recentCandidates.map(function (candidate) {
                         return (
                             <div key={candidate.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #f9fafb" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -741,10 +711,10 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
     );
 }
 
-// COMPONENT: JobFormModal
-// A full-screen overlay modal for creating or editing a job listing.
+
+//  JobFormModal 
+// A modal for creating or editing a job listing.
 // Clicking the dark backdrop also closes the modal.
-//
 // Props:
 //   job     - the job object to edit, or null when creating a new one
 //   onClose - called when the modal should be dismissed
@@ -752,72 +722,45 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
 
 function JobFormModal({ job, onClose, onSave }) {
 
-    // The empty template used when creating a brand-new job
-    const emptyForm = {
-        title: "",
-        description: "",
-        requirements: "",
-        salary: "",
-        location: "Hà Nội",
-        category: "Công nghệ thông tin",
-        type: "Full-time",
-        deadline: "",
-    };
-
-    // If a job was passed in, start with its values; otherwise use the empty template.
-    // We can't use spread here, so we copy each field manually.
-    let initialForm;
+    // If a job was passed in, start with its values; otherwise use empty strings.
+    let initialTitle = "";
+    let initialDescription = "";
+    let initialRequirements = "";
+    let initialSalary = "";
+    let initialLocation = "Hà Nội";
+    let initialCategory = "Công nghệ thông tin";
+    let initialType = "Full-time";
+    let initialDeadline = "";
 
     if (job) {
-        initialForm = {
-            title: job.title,
-            description: job.description,
-            requirements: job.requirements,
-            salary: job.salary,
-            location: job.location,
-            category: job.category,
-            type: job.type,
-            deadline: job.deadline,
-        };
-    } else {
-        initialForm = emptyForm;
+        initialTitle = job.title;
+        initialDescription = job.description;
+        initialRequirements = job.requirements;
+        initialSalary = job.salary;
+        initialLocation = job.location;
+        initialCategory = job.category;
+        initialType = job.type;
+        initialDeadline = job.deadline;
     }
 
-    const [form, setForm] = useState(initialForm);
+    const [title, setTitle] = useState(initialTitle);
+    const [description, setDescription] = useState(initialDescription);
+    const [requirements, setRequirements] = useState(initialRequirements);
+    const [salary, setSalary] = useState(initialSalary);
+    const [location, setLocation] = useState(initialLocation);
+    const [category, setCategory] = useState(initialCategory);
+    const [type, setType] = useState(initialType);
+    const [deadline, setDeadline] = useState(initialDeadline);
     const [loading, setLoading] = useState(false);
 
-
-    //setField
-    // Updates a single field in the form object without touching the others.
-    // Because we can't use spread, we rebuild the object key by key.
-
-    function setField(fieldName, value) {
-        const updated = {
-            title: form.title,
-            description: form.description,
-            requirements: form.requirements,
-            salary: form.salary,
-            location: form.location,
-            category: form.category,
-            type: form.type,
-            deadline: form.deadline,
-        };
-
-        updated[fieldName] = value;
-        setForm(updated);
-    }
-
-
-    //handleSave
-    // Simulates a save delay, then calls onSave with the complete job object.
+    // Simulate a save delay then call onSave with the complete job object.
     // For editing: keeps the existing id, status, applicants, posted date.
     // For creating: generates a new id and sets defaults.
-
     async function handleSave(event) {
         event.preventDefault();
         setLoading(true);
 
-        // Simulate network delay (remove this when connected to a real backend)
+        // Simulate network delay (remove when connected to a real backend)
         await new Promise(function (resolve) { setTimeout(resolve, 900); });
 
         let savedJob;
@@ -825,34 +768,22 @@ function JobFormModal({ job, onClose, onSave }) {
         if (job) {
             // Editing an existing job — preserve its metadata fields
             savedJob = {
-                title: form.title,
-                description: form.description,
-                requirements: form.requirements,
-                salary: form.salary,
-                location: form.location,
-                category: form.category,
-                type: form.type,
-                deadline: form.deadline,
-                id: job.id,
-                status: job.status,
-                applicants: job.applicants,
-                posted: job.posted,
+                id: job.id, status: job.status,
+                applicants: job.applicants, posted: job.posted,
+                title: title, description: description,
+                requirements: requirements, salary: salary,
+                location: location, category: category,
+                type: type, deadline: deadline,
             };
         } else {
             // Creating a new job — generate id and set defaults
             savedJob = {
-                title: form.title,
-                description: form.description,
-                requirements: form.requirements,
-                salary: form.salary,
-                location: form.location,
-                category: form.category,
-                type: form.type,
-                deadline: form.deadline,
-                id: "JP" + Date.now(),
-                status: "active",
-                applicants: 0,
-                posted: new Date().toISOString().slice(0, 10),
+                id: "JP" + Date.now(), status: "active",
+                applicants: 0, posted: new Date().toISOString().slice(0, 10),
+                title: title, description: description,
+                requirements: requirements, salary: salary,
+                location: location, category: category,
+                type: type, deadline: deadline,
             };
         }
 
@@ -861,30 +792,24 @@ function JobFormModal({ job, onClose, onSave }) {
         onClose();
     }
 
-    //handleBackdropClick
     // Closes the modal when the user clicks the dark background area,
     // but not when they click inside the white dialog box.
-
     function handleBackdropClick(event) {
         if (event.target === event.currentTarget) {
             onClose();
         }
     }
 
-    //Modal title
+    // Xác định tiêu đề modal theo chế độ tạo mới hay chỉnh sửa
     let modalTitle;
-
     if (job) {
         modalTitle = "Chỉnh sửa tin tuyển dụng";
     } else {
         modalTitle = "Tạo tin tuyển dụng mới";
     }
 
-
-    //Save button label
-
+    // Xác định chữ nút lưu theo trạng thái loading và chế độ
     let saveButtonLabel;
-
     if (loading) {
         saveButtonLabel = "Đang lưu...";
     } else if (job) {
@@ -892,8 +817,6 @@ function JobFormModal({ job, onClose, onSave }) {
     } else {
         saveButtonLabel = "Đăng tuyển dụng";
     }
-
-    //Render
 
     return (
         <div
@@ -914,30 +837,30 @@ function JobFormModal({ job, onClose, onSave }) {
                     {/* Job title */}
                     <div>
                         {getFieldLabel("Tiêu đề công việc *")}
-                        <input value={form.title} onChange={function (e) { setField("title", e.target.value); }} required placeholder="VD: Lập Trình Viên Full Stack" style={inputStyle} />
+                        <input value={title} onChange={function (e) { setTitle(e.target.value); }} required placeholder="VD: Lập Trình Viên Full Stack" style={inputStyle} />
                     </div>
 
                     {/* Salary + Location + Category + Type grid */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                         <div>
                             {getFieldLabel("Mức lương")}
-                            <input value={form.salary} onChange={function (e) { setField("salary", e.target.value); }} placeholder="VD: 20-35 triệu" style={inputStyle} />
+                            <input value={salary} onChange={function (e) { setSalary(e.target.value); }} placeholder="VD: 20-35 triệu" style={inputStyle} />
                         </div>
                         <div>
                             {getFieldLabel("Địa điểm")}
-                            <select value={form.location} onChange={function (e) { setField("location", e.target.value); }} style={inputStyle}>
+                            <select value={location} onChange={function (e) { setLocation(e.target.value); }} style={inputStyle}>
                                 {LOCATIONS.map(function (loc) { return <option key={loc}>{loc}</option>; })}
                             </select>
                         </div>
                         <div>
                             {getFieldLabel("Danh mục (tuỳ chọn)")}
-                            <select value={form.category} onChange={function (e) { setField("category", e.target.value); }} style={inputStyle}>
+                            <select value={category} onChange={function (e) { setCategory(e.target.value); }} style={inputStyle}>
                                 {CATEGORIES.map(function (cat) { return <option key={cat}>{cat}</option>; })}
                             </select>
                         </div>
                         <div>
                             {getFieldLabel("Loại công việc")}
-                            <select value={form.type} onChange={function (e) { setField("type", e.target.value); }} style={inputStyle}>
+                            <select value={type} onChange={function (e) { setType(e.target.value); }} style={inputStyle}>
                                 {JOB_TYPES.map(function (t) { return <option key={t}>{t}</option>; })}
                             </select>
                         </div>
@@ -946,19 +869,19 @@ function JobFormModal({ job, onClose, onSave }) {
                     {/* Deadline */}
                     <div>
                         {getFieldLabel("Deadline")}
-                        <input type="date" value={form.deadline} onChange={function (e) { setField("deadline", e.target.value); }} style={inputStyle} />
+                        <input type="date" value={deadline} onChange={function (e) { setDeadline(e.target.value); }} style={inputStyle} />
                     </div>
 
                     {/* Description */}
                     <div>
                         {getFieldLabel("Mô tả công việc *")}
-                        <textarea value={form.description} onChange={function (e) { setField("description", e.target.value); }} required rows={5} placeholder="Mô tả chi tiết về công việc, trách nhiệm..." style={{ ...inputStyle, resize: "vertical" }} />
+                        <textarea value={description} onChange={function (e) { setDescription(e.target.value); }} required rows={5} placeholder="Mô tả chi tiết về công việc, trách nhiệm..." style={textareaStyle} />
                     </div>
 
                     {/* Requirements */}
                     <div>
                         {getFieldLabel("Yêu cầu kỹ năng *")}
-                        <textarea value={form.requirements} onChange={function (e) { setField("requirements", e.target.value); }} required rows={4} placeholder="Liệt kê các yêu cầu (mỗi yêu cầu một dòng)..." style={{ ...inputStyle, resize: "vertical" }} />
+                        <textarea value={requirements} onChange={function (e) { setRequirements(e.target.value); }} required rows={4} placeholder="Liệt kê các yêu cầu (mỗi yêu cầu một dòng)..." style={textareaStyle} />
                     </div>
 
                     {/* Save + Cancel buttons */}
@@ -978,10 +901,8 @@ function JobFormModal({ job, onClose, onSave }) {
     );
 }
 
-// COMPONENT: DeleteModal
+//  DeleteModal 
 // A confirmation dialog shown before permanently deleting a job.
-// Clicking the backdrop cancels the delete.
-//
 // Props:
 //   job       - the job about to be deleted (used to show its title)
 //   onConfirm - called when the user clicks the red "Xoá" button
@@ -997,7 +918,6 @@ function DeleteModal({ job, onConfirm, onClose }) {
 
     // Show "N/A" if somehow no job is passed
     let jobTitle = "N/A";
-
     if (job && job.title) {
         jobTitle = job.title;
     }
@@ -1022,119 +942,117 @@ function DeleteModal({ job, onConfirm, onClose }) {
     );
 }
 
-// COMPONENT: JobsTab
+//  JobsTab 
 // Lists all job postings with filter buttons and per-job action buttons.
-// Manages the create/edit form modal and the delete confirmation modal.
-//
 // Props:
 //   jobs    - the jobs array from root state
 //   setJobs - setter to update the jobs array
 
 function JobsTab({ jobs, setJobs }) {
     const [showForm, setShowForm] = useState(false);
-    const [editJob, setEditJob] = useState(null);    // null = create new
-    const [deleteJob, setDeleteJob] = useState(null);    // null = no pending delete
-    const [filter, setFilter] = useState("all");   // "all" | "active" | "closed"
+    const [editJob, setEditJob] = useState(null);   // null = create new
+    const [deleteJob, setDeleteJob] = useState(null);   // null = no pending delete
+    const [filter, setFilter] = useState("all");  // "all" | "active" | "closed"
 
+    // Filter the jobs list
+    const filteredJobs = [];
+    for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
 
-    //Filter the jobs list
-    // "all" shows everything, otherwise only jobs matching the status.
-
-    let filteredJobs;
-
-    if (filter === "all") {
-        filteredJobs = jobs;
-    } else {
-        filteredJobs = jobs.filter(function (j) { return j.status === filter; });
+        if (filter === "all") {
+            filteredJobs.push(job);
+        } else if (job.status === filter) {
+            filteredJobs.push(job);
+        }
     }
 
-
-    //handleSave
     // Called by JobFormModal when the user saves.
-    // If the job already exists (matched by id), replace it.
-    // If it is new, prepend it to the list.
-
+    // If the job already exists (matched by id), replace it; otherwise prepend it.
     function handleSave(savedJob) {
-        const exists = jobs.find(function (j) { return j.id === savedJob.id; });
+        let exists = false;
+        for (let i = 0; i < jobs.length; i++) {
+            if (jobs[i].id === savedJob.id) {
+                exists = true;
+                break;
+            }
+        }
 
         if (exists) {
             // Replace the existing job
-            const updated = jobs.map(function (j) {
-                if (j.id === savedJob.id) {
-                    return savedJob;
+            const updated = [];
+            for (let i = 0; i < jobs.length; i++) {
+                if (jobs[i].id === savedJob.id) {
+                    updated.push(savedJob);
+                } else {
+                    updated.push(jobs[i]);
                 }
-                return j;
-            });
+            }
             setJobs(updated);
         } else {
             // Prepend the new job
-            const updated = [savedJob].concat(jobs);
+            const updated = [savedJob];
+            for (let i = 0; i < jobs.length; i++) {
+                updated.push(jobs[i]);
+            }
             setJobs(updated);
         }
     }
 
-
-    //handleDelete
     // Removes the job currently stored in deleteJob from the list.
-
     function handleDelete() {
-        const updated = jobs.filter(function (j) { return j.id !== deleteJob.id; });
+        const updated = [];
+        for (let i = 0; i < jobs.length; i++) {
+            if (jobs[i].id !== deleteJob.id) {
+                updated.push(jobs[i]);
+            }
+        }
         setJobs(updated);
         setDeleteJob(null);
     }
 
-
-    //handleToggleStatus
     // Flips a job between "active" and "closed".
-
     function handleToggleStatus(id) {
-        const updated = jobs.map(function (j) {
-            if (j.id !== id) {
-                return j;
+        const updated = [];
+
+        for (let i = 0; i < jobs.length; i++) {
+            const job = jobs[i];
+
+            if (job.id !== id) {
+                updated.push(job);
+            } else {
+                // Determine the new status
+                let newStatus;
+                if (job.status === "active") {
+                    newStatus = "closed";
+                } else {
+                    newStatus = "active";
+                }
+
+                // Build updated job object field by field (no spread)
+                updated.push({
+                    id: job.id, title: job.title, description: job.description,
+                    requirements: job.requirements, salary: job.salary,
+                    location: job.location, category: job.category, type: job.type,
+                    deadline: job.deadline, posted: job.posted, applicants: job.applicants,
+                    status: newStatus,
+                });
             }
-
-            // Build the updated job object field by field (no spread)
-            const toggled = {
-                id: j.id,
-                title: j.title,
-                description: j.description,
-                requirements: j.requirements,
-                salary: j.salary,
-                location: j.location,
-                category: j.category,
-                type: j.type,
-                deadline: j.deadline,
-                posted: j.posted,
-                applicants: j.applicants,
-                status: j.status === "active" ? "closed" : "active",
-            };
-
-            return toggled;
-        });
+        }
 
         setJobs(updated);
     }
 
-
-    //handleOpenCreate
     // Opens the form modal in "create new" mode.
-
     function handleOpenCreate() {
         setEditJob(null);
         setShowForm(true);
     }
 
-
-    //handleOpenEdit
     // Opens the form modal in "edit" mode for the given job.
-
     function handleOpenEdit(job) {
         setEditJob(job);
         setShowForm(true);
     }
-
-
-    //Render
 
     const filterOptions = [
         { value: "all", label: "Tất cả" },
@@ -1175,6 +1093,16 @@ function JobsTab({ jobs, setJobs }) {
             {filteredJobs.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     {filteredJobs.map(function (job) {
+
+                        // Cắt ngắn mô tả để hiển thị trên card
+                        const shortDescription = job.description.slice(0, 120) + "…";
+
+                        // Xác định ngày deadline hiển thị
+                        let deadlineDisplay = "-";
+                        if (job.deadline) {
+                            deadlineDisplay = formatDate(job.deadline);
+                        }
+
                         return (
                             <div key={job.id} style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "18px 20px" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
@@ -1187,19 +1115,14 @@ function JobsTab({ jobs, setJobs }) {
                                                 {getJobStatusLabel(job.status)}
                                             </span>
                                         </div>
-
-                                        {/* Meta row: salary, location, type, deadline, applicants */}
                                         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                                             <span style={{ fontSize: 12, color: "#6b7280" }}>💰 {job.salary}</span>
                                             <span style={{ fontSize: 12, color: "#6b7280" }}>📍 {job.location}</span>
                                             <span style={{ fontSize: 12, color: "#6b7280" }}>💼 {job.type}</span>
-                                            <span style={{ fontSize: 12, color: "#6b7280" }}>📅 Deadline: {job.deadline ? formatDate(job.deadline) : "-"}</span>
+                                            <span style={{ fontSize: 12, color: "#6b7280" }}>📅 Deadline: {deadlineDisplay}</span>
                                             <span style={{ fontSize: 12, color: "#6b7280" }}>👥 {job.applicants} ứng viên</span>
                                         </div>
-
-                                        <p style={{ margin: 0, fontSize: 12, color: "#9ca3af", lineHeight: 1.5 }}>
-                                            {job.description.slice(0, 120)}…
-                                        </p>
+                                        <p style={{ margin: 0, fontSize: 12, color: "#9ca3af", lineHeight: 1.5 }}>{shortDescription}</p>
                                     </div>
 
                                     {/* Action buttons */}
@@ -1242,9 +1165,8 @@ function JobsTab({ jobs, setJobs }) {
     );
 }
 
-// COMPONENT: CVModal
-// A full-screen overlay showing a candidate's full profile.
-//
+//  CVModal 
+// A modal showing a candidate's full profile.
 // Props:
 //   candidate - the candidate object to display
 //   onClose   - called when the modal should be dismissed
@@ -1255,6 +1177,15 @@ function CVModal({ candidate, onClose }) {
         if (event.target === event.currentTarget) {
             onClose();
         }
+    }
+
+    // Tạo tên file CV từ tên ứng viên (thay dấu cách bằng gạch dưới)
+    const cvFileName = "CV_" + candidate.name.replace(/ /g, "_") + ".pdf";
+
+    // Lấy tối đa 3 kỹ năng đầu để hiển thị trên card
+    const displaySkills = [];
+    for (let i = 0; i < candidate.skills.length && i < 3; i++) {
+        displaySkills.push(candidate.skills[i]);
     }
 
     return (
@@ -1326,9 +1257,7 @@ function CVModal({ candidate, onClose }) {
                     {/* CV download row */}
                     <div style={{ background: "#f9fafb", borderRadius: 10, padding: "14px 16px", fontSize: 12, color: "#6b7280" }}>
                         📄 CV đính kèm:{' '}
-                        <span style={{ color: "#7c3aed", fontWeight: 500, cursor: "pointer" }}>
-                            CV_{candidate.name.replace(/ /g, "_")}.pdf
-                        </span>
+                        <span style={{ color: "#7c3aed", fontWeight: 500, cursor: "pointer" }}>{cvFileName}</span>
                         <span style={{ marginLeft: 8, color: "#9ca3af" }}>(Demo - chưa tích hợp backend)</span>
                     </div>
 
@@ -1338,61 +1267,63 @@ function CVModal({ candidate, onClose }) {
     );
 }
 
-// COMPONENT: CandidatesTab
+//  CandidatesTab 
 // Lists all candidates with filters by job and by status.
-// Each row has a status dropdown and a "Xem CV" button.
-//
 // Props:
 //   candidates    - the candidates array from root state
 //   setCandidates - setter to update a candidate's status
 //   jobs          - used to resolve the job title for each candidate row
 
 function CandidatesTab({ candidates, setCandidates, jobs }) {
-    const [viewCV, setViewCV] = useState(null);   // candidate to show in CVModal, or null
-    const [filterJob, setFilterJob] = useState("all");  // "all" or a job id like "JP001"
-    const [filterStatus, setFilterStatus] = useState("all");  // "all" or a status key
+    const [viewCV, setViewCV] = useState(null);    // candidate to show in CVModal, or null
+    const [filterJob, setFilterJob] = useState("all");   // "all" or a job id like "JP001"
+    const [filterStatus, setFilterStatus] = useState("all");   // "all" or a status key
 
-    //  Filter the candidates list
+    // Filter the candidates list
+    const filteredCandidates = [];
+    for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
 
-    const filteredCandidates = candidates.filter(function (candidate) {
-        const jobMatch = filterJob === "all" || candidate.appliedJob === filterJob;
-        const statusMatch = filterStatus === "all" || candidate.status === filterStatus;
-        return jobMatch && statusMatch;
-    });
+        let jobMatch = true;
+        if (filterJob !== "all") {
+            jobMatch = candidate.appliedJob === filterJob;
+        }
 
+        let statusMatch = true;
+        if (filterStatus !== "all") {
+            statusMatch = candidate.status === filterStatus;
+        }
 
-    //  updateStatus 
+        if (jobMatch && statusMatch) {
+            filteredCandidates.push(candidate);
+        }
+    }
+
     // Changes a single candidate's status without touching the others.
-
     function updateStatus(id, newStatus) {
-        const updated = candidates.map(function (candidate) {
-            if (candidate.id !== id) {
-                return candidate;
-            }
+        const updated = [];
 
-            // Build a new candidate object with the updated status
-            return {
-                id: candidate.id,
-                name: candidate.name,
-                position: candidate.position,
-                experience: candidate.experience,
-                skills: candidate.skills,
-                location: candidate.location,
-                email: candidate.email,
-                phone: candidate.phone,
-                appliedJob: candidate.appliedJob,
-                appliedDate: candidate.appliedDate,
-                bio: candidate.bio,
-                education: candidate.education,
-                status: newStatus,
-            };
-        });
+        for (let i = 0; i < candidates.length; i++) {
+            const candidate = candidates[i];
+
+            if (candidate.id !== id) {
+                updated.push(candidate);
+            } else {
+                // Build a new candidate object with the updated status (no spread)
+                updated.push({
+                    id: candidate.id, name: candidate.name,
+                    position: candidate.position, experience: candidate.experience,
+                    skills: candidate.skills, location: candidate.location,
+                    email: candidate.email, phone: candidate.phone,
+                    appliedJob: candidate.appliedJob, appliedDate: candidate.appliedDate,
+                    bio: candidate.bio, education: candidate.education,
+                    status: newStatus,
+                });
+            }
+        }
 
         setCandidates(updated);
     }
-
-
-    //  Render 
 
     return (
         <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
@@ -1407,7 +1338,7 @@ function CandidatesTab({ candidates, setCandidates, jobs }) {
             <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
 
                 {/* Filter by which job the candidate applied to */}
-                <select value={filterJob} onChange={function (e) { setFilterJob(e.target.value); }} style={{ ...inputStyle, width: "auto", fontSize: 13 }}>
+                <select value={filterJob} onChange={function (e) { setFilterJob(e.target.value); }} style={autoSelectStyle}>
                     <option value="all">Tất cả tin đăng</option>
                     {jobs.map(function (job) {
                         return (
@@ -1419,7 +1350,7 @@ function CandidatesTab({ candidates, setCandidates, jobs }) {
                 </select>
 
                 {/* Filter by candidate status */}
-                <select value={filterStatus} onChange={function (e) { setFilterStatus(e.target.value); }} style={{ ...inputStyle, width: "auto", fontSize: 13 }}>
+                <select value={filterStatus} onChange={function (e) { setFilterStatus(e.target.value); }} style={autoSelectStyle}>
                     <option value="all">Tất cả trạng thái</option>
                     {Object.entries(STATUS_CONFIG).map(function (entry) {
                         const key = entry[0];
@@ -1439,12 +1370,19 @@ function CandidatesTab({ candidates, setCandidates, jobs }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {filteredCandidates.map(function (candidate) {
 
-                        // Find the job this candidate applied to (to show its title)
+                        // Tìm tên tin tuyển dụng mà ứng viên này đã nộp
                         let jobTitle = "N/A";
-                        const appliedJob = jobs.find(function (j) { return j.id === candidate.appliedJob; });
+                        for (let i = 0; i < jobs.length; i++) {
+                            if (jobs[i].id === candidate.appliedJob) {
+                                jobTitle = jobs[i].title.slice(0, 35) + "…";
+                                break;
+                            }
+                        }
 
-                        if (appliedJob && appliedJob.title) {
-                            jobTitle = appliedJob.title.slice(0, 35) + "…";
+                        // Lấy tối đa 3 kỹ năng đầu để hiển thị
+                        const topSkills = [];
+                        for (let i = 0; i < candidate.skills.length && i < 3; i++) {
+                            topSkills.push(candidate.skills[i]);
                         }
 
                         return (
@@ -1466,7 +1404,7 @@ function CandidatesTab({ candidates, setCandidates, jobs }) {
                                                 Ứng tuyển: <span style={{ color: "#374151" }}>{jobTitle}</span> · {formatDate(candidate.appliedDate)}
                                             </div>
                                             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                                                {candidate.skills.slice(0, 3).map(function (skill) {
+                                                {topSkills.map(function (skill) {
                                                     return (
                                                         <span key={skill} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "#f5f3ff", color: "#7c3aed" }}>
                                                             {skill}
@@ -1479,7 +1417,7 @@ function CandidatesTab({ candidates, setCandidates, jobs }) {
 
                                     {/* Status dropdown + CV button */}
                                     <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", flexWrap: "wrap" }}>
-                                        <select value={candidate.status} onChange={function (e) { updateStatus(candidate.id, e.target.value); }} style={{ ...inputStyle, width: "auto", fontSize: 12, padding: "6px 10px" }}>
+                                        <select value={candidate.status} onChange={function (e) { updateStatus(candidate.id, e.target.value); }} style={smallSelectStyle}>
                                             {Object.entries(STATUS_CONFIG).map(function (entry) {
                                                 const key = entry[0];
                                                 const value = entry[1];
@@ -1507,69 +1445,67 @@ function CandidatesTab({ candidates, setCandidates, jobs }) {
     );
 }
 
-
-// COMPONENT: TalentTab
+//  TalentTab 
 // A search panel that filters the talent pool by skill, experience, and location.
 
 function TalentTab() {
-    // search holds the three filter values
     const [searchSkill, setSearchSkill] = useState("");
     const [searchExperience, setSearchExperience] = useState("Tất cả");
     const [searchLocation, setSearchLocation] = useState("Tất cả");
     const [results, setResults] = useState(MOCK_TALENT_POOL);
     const [hasSearched, setHasSearched] = useState(false);
 
-
-    //  handleSearch 
     // Filters the talent pool and updates the results state.
-
     function handleSearch() {
         const keyword = searchSkill.toLowerCase();
+        const filtered = [];
 
-        const filtered = MOCK_TALENT_POOL.filter(function (talent) {
+        for (let i = 0; i < MOCK_TALENT_POOL.length; i++) {
+            const talent = MOCK_TALENT_POOL[i];
+
             // Skill/position match — true if no keyword was typed
             let skillMatch = true;
-
             if (keyword !== "") {
                 const positionMatch = talent.position.toLowerCase().includes(keyword);
-                const hasSkill = talent.skills.some(function (skill) {
-                    return skill.toLowerCase().includes(keyword);
-                });
+
+                let hasSkill = false;
+                for (let j = 0; j < talent.skills.length; j++) {
+                    if (talent.skills[j].toLowerCase().includes(keyword)) {
+                        hasSkill = true;
+                        break;
+                    }
+                }
+
                 skillMatch = positionMatch || hasSkill;
             }
 
             // Experience match — true if "Tất cả" is selected
             let experienceMatch = true;
-
             if (searchExperience !== "Tất cả") {
                 experienceMatch = talent.experience === searchExperience;
             }
 
             // Location match — true if "Tất cả" is selected
             let locationMatch = true;
-
             if (searchLocation !== "Tất cả") {
                 locationMatch = talent.location === searchLocation;
             }
 
-            return skillMatch && experienceMatch && locationMatch;
-        });
+            if (skillMatch && experienceMatch && locationMatch) {
+                filtered.push(talent);
+            }
+        }
 
         setResults(filtered);
         setHasSearched(true);
     }
 
-
-    //  handleKeyDown 
     // Triggers the search when Enter is pressed in the skill input.
-
     function handleKeyDown(event) {
         if (event.key === "Enter") {
             handleSearch();
         }
     }
-
-    //  Render 
 
     return (
         <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
@@ -1583,13 +1519,7 @@ function TalentTab() {
                     {/* Skill / position keyword input */}
                     <div>
                         <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>Kỹ năng / Vị trí</label>
-                        <input
-                            value={searchSkill}
-                            onChange={function (e) { setSearchSkill(e.target.value); }}
-                            placeholder="React, Python, Designer..."
-                            style={inputStyle}
-                            onKeyDown={handleKeyDown}
-                        />
+                        <input value={searchSkill} onChange={function (e) { setSearchSkill(e.target.value); }} placeholder="React, Python, Designer..." style={inputStyle} onKeyDown={handleKeyDown} />
                     </div>
 
                     {/* Experience dropdown */}
@@ -1689,65 +1619,34 @@ function TalentTab() {
     );
 }
 
-// COMPONENT: CompanyTab
+//  CompanyTab 
 // A form for editing the employer's company profile.
-// Shows a toast-style "Đã lưu!" confirmation after saving.
 
 function CompanyTab() {
-    const [company, setCompany] = useState({
-        name: "Công ty JobHot",
-        description: "Nền tảng tuyển dụng hàng đầu Việt Nam, kết nối hàng triệu ứng viên với các nhà tuyển dụng uy tín trên cả nước.",
-        address: "Tòa nhà FLC, 18 Phạm Hùng, Nam Từ Liêm, Hà Nội",
-        website: "https://jobhot.vn",
-        size: "50-100 nhân viên",
-        industry: "Công nghệ thông tin",
-        email: "hr@jobhot.vn",
-        phone: "024 1234 5678",
-    });
+    const [name, setName] = useState("Công ty JobHot");
+    const [description, setDescription] = useState("Nền tảng tuyển dụng hàng đầu Việt Nam, kết nối hàng triệu ứng viên với các nhà tuyển dụng uy tín trên cả nước.");
+    const [address, setAddress] = useState("Tòa nhà FLC, 18 Phạm Hùng, Nam Từ Liêm, Hà Nội");
+    const [website, setWebsite] = useState("https://jobhot.vn");
+    const [size, setSize] = useState("50-100 nhân viên");
+    const [industry, setIndustry] = useState("Công nghệ thông tin");
+    const [email, setEmail] = useState("hr@jobhot.vn");
+    const [phone, setPhone] = useState("024 1234 5678");
+    const [saved, setSaved] = useState(false); // true for 2.5s after saving
 
-    const [saved, setSaved] = useState(false);  // true for 2.5s after saving
-
-    //  setField 
-    // Updates a single field in the company object.
-    // Rebuilds the whole object manually (no spread).
-
-    function setField(fieldName, value) {
-        const updated = {
-            name: company.name,
-            description: company.description,
-            address: company.address,
-            website: company.website,
-            size: company.size,
-            industry: company.industry,
-            email: company.email,
-            phone: company.phone,
-        };
-
-        updated[fieldName] = value;
-        setCompany(updated);
-    }
-
-
-    //  handleSave 
-    // Shows the "Đã lưu!" confirmation for 2.5 seconds.
-
+    // Hiển thị "Đã lưu!" trong 2.5 giây sau khi lưu thành công
     function handleSave(event) {
         event.preventDefault();
         setSaved(true);
         setTimeout(function () { setSaved(false); }, 2500);
     }
 
-    //  Save button label
-
+    // Xác định chữ nút lưu
     let saveButtonLabel;
-
     if (saved) {
         saveButtonLabel = "✓ Đã lưu!";
     } else {
         saveButtonLabel = "Lưu thay đổi";
     }
-
-    //  Render 
 
     return (
         <div style={{ flex: 1, overflowY: "auto", padding: 24, maxWidth: 720 }}>
@@ -1758,8 +1657,8 @@ function CompanyTab() {
                     CT
                 </div>
                 <div>
-                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" }}>{company.name}</h2>
-                    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>{company.industry} · {company.size}</div>
+                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" }}>{name}</h2>
+                    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>{industry} · {size}</div>
                 </div>
             </div>
 
@@ -1771,30 +1670,30 @@ function CompanyTab() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                     <div>
                         {getFieldLabel("Tên công ty *")}
-                        <input value={company.name} onChange={function (e) { setField("name", e.target.value); }} required style={inputStyle} />
+                        <input value={name} onChange={function (e) { setName(e.target.value); }} required style={inputStyle} />
                     </div>
                     <div>
                         {getFieldLabel("Website")}
-                        <input value={company.website} onChange={function (e) { setField("website", e.target.value); }} placeholder="https://..." style={inputStyle} />
+                        <input value={website} onChange={function (e) { setWebsite(e.target.value); }} placeholder="https://..." style={inputStyle} />
                     </div>
                     <div>
                         {getFieldLabel("Email liên hệ")}
-                        <input type="email" value={company.email} onChange={function (e) { setField("email", e.target.value); }} style={inputStyle} />
+                        <input type="email" value={email} onChange={function (e) { setEmail(e.target.value); }} style={inputStyle} />
                     </div>
                     <div>
                         {getFieldLabel("Số điện thoại")}
-                        <input value={company.phone} onChange={function (e) { setField("phone", e.target.value); }} style={inputStyle} />
+                        <input value={phone} onChange={function (e) { setPhone(e.target.value); }} style={inputStyle} />
                     </div>
                     <div>
                         {getFieldLabel("Ngành nghề")}
-                        <select value={company.industry} onChange={function (e) { setField("industry", e.target.value); }} style={inputStyle}>
+                        <select value={industry} onChange={function (e) { setIndustry(e.target.value); }} style={inputStyle}>
                             {CATEGORIES.map(function (cat) { return <option key={cat}>{cat}</option>; })}
                         </select>
                     </div>
                     <div>
                         {getFieldLabel("Quy mô")}
-                        <select value={company.size} onChange={function (e) { setField("size", e.target.value); }} style={inputStyle}>
-                            {COMPANY_SIZES.map(function (size) { return <option key={size}>{size}</option>; })}
+                        <select value={size} onChange={function (e) { setSize(e.target.value); }} style={inputStyle}>
+                            {COMPANY_SIZES.map(function (s) { return <option key={s}>{s}</option>; })}
                         </select>
                     </div>
                 </div>
@@ -1802,20 +1701,13 @@ function CompanyTab() {
                 {/* Address */}
                 <div>
                     {getFieldLabel("Địa chỉ *")}
-                    <input value={company.address} onChange={function (e) { setField("address", e.target.value); }} required style={inputStyle} />
+                    <input value={address} onChange={function (e) { setAddress(e.target.value); }} required style={inputStyle} />
                 </div>
 
                 {/* Description */}
                 <div>
                     {getFieldLabel("Mô tả công ty *")}
-                    <textarea
-                        value={company.description}
-                        onChange={function (e) { setField("description", e.target.value); }}
-                        required
-                        rows={5}
-                        placeholder="Mô tả về công ty, văn hóa, sứ mệnh..."
-                        style={{ ...inputStyle, resize: "vertical" }}
-                    />
+                    <textarea value={description} onChange={function (e) { setDescription(e.target.value); }} required rows={5} placeholder="Mô tả về công ty, văn hóa, sứ mệnh..." style={textareaStyle} />
                 </div>
 
                 {/* Save button */}
@@ -1833,7 +1725,7 @@ function CompanyTab() {
     );
 }
 
-// COMPONENT: EmployerDashboard  (root / entry point)
+//  EmployerDashboard (root entry point) 
 // Holds the top-level state (jobs, candidates, active tab)
 // and renders the sidebar + the currently active tab panel.
 
@@ -1851,27 +1743,18 @@ export default function EmployerDashboard() {
         company: "Thông tin công ty",
     };
 
-
-    //  handleLogout 
-    // Clears the stored token and redirects to the login page.
-
+    // Xóa token và chuyển về trang đăng nhập
     function handleLogout() {
         localStorage.removeItem("token");
         window.location.href = "/login";
     }
 
-
-    //  Active job count 
-    // Shown in the top bar badge.
-
+    // Đếm số tin đang tuyển để hiển thị trên top bar
     const activeJobCount = jobs.filter(function (j) { return j.status === "active"; }).length;
-
-
-    //  Render 
 
     return (
         <>
-            {/* Global CSS: the spin animation and box-sizing reset */}
+            {/* Global CSS: spin animation and box-sizing reset */}
             <style>{`
                 @keyframes spin { to { transform: rotate(360deg); } }
                 * { box-sizing: border-box; }
