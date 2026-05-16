@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import Logo from '../assets/img/Logo.png';
 
 // CONFIG
 // The base URL for all API calls.
 // Every fetch goes to /server/index.php with a different ?action= param.
 
-const API = '/server/index.php';
+const API = 'http://localhost:8888/aptech-project/server/index.php';
 
 // DATA: INDUSTRIES
 // The dropdown options shown to job-seekers in Step 2.
@@ -432,7 +433,7 @@ function StepRole({ onBack, onSubmit, loading, serverError }) {
     // Each card sets the role and clears any "please choose" error.
 
     function handleSelectUser() {
-        setRole('user');
+        setRole('job_seeker');
         setError('');
     }
 
@@ -461,14 +462,14 @@ function StepRole({ onBack, onSubmit, loading, serverError }) {
                     <button
                         type="button"
                         onClick={handleSelectUser}
-                        className={getRoleCardClasses(role === 'user')}
+                        className={getRoleCardClasses(role === 'job_seeker')}
                     >
                         <span className="text-4xl">🧑‍💼</span>
                         <div className="text-center">
-                            <div className={getRoleLabelClasses(role === 'user')}>Người tìm việc</div>
+                            <div className={getRoleLabelClasses(role === 'job_seeker')}>Người tìm việc</div>
                             <div className="text-xs text-gray-500 mt-1">Tìm kiếm cơ hội nghề nghiệp</div>
                         </div>
-                        {role === 'user' && (
+                        {role === 'job_seeker' && (
                             <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs">✓</div>
                         )}
                     </button>
@@ -497,7 +498,7 @@ function StepRole({ onBack, onSubmit, loading, serverError }) {
 
             {/* ── Industry dropdown ── */}
             {/* Only shown when the user picked "Người tìm việc" */}
-            {role === 'user' && (
+            {role === 'job_seeker' && (
                 <div className="flex flex-col gap-1">
                     <label className="text-sm font-medium text-gray-700">
                         Ngành nghề quan tâm{' '}
@@ -707,8 +708,9 @@ const RegisterPage = () => {
 
                 {/* Site logo + tagline above the card */}
                 <div className="text-center mb-6">
-                    <Link to="/" className="text-white font-bold text-3xl tracking-tight">JobHot</Link>
-                    <p className="text-purple-100 text-sm mt-1">Tìm việc làm dễ dàng hơn</p>
+                    <Link to="/" className="inline-flex flex-col items-center gap-2">
+                        <img src={Logo} alt="JobHot Logo" className="h-28 w-auto" />
+                    </Link>
                 </div>
 
                 <div className="bg-white rounded-2xl p-8 shadow-xl">

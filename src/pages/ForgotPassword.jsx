@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Logo from '../assets/img/Logo.png';
 
 // CONFIG
 // The base URL for all API calls.
 // Every fetch goes to /server/index.php with a different ?action= param.
 
-const API = '/server/index.php';
+const API = 'http://localhost:8888/aptech-project/server/index.php';
 
 // COMPONENT: SpinnerIcon
 // A small spinning SVG shown inside buttons while a request is in progress.
@@ -668,8 +669,9 @@ const ForgotPasswordPage = () => {
 
                 {/* Site logo + tagline above the card */}
                 <div className="text-center mb-6">
-                    <Link to="/" className="text-white font-bold text-3xl tracking-tight">JobHot</Link>
-                    <p className="text-purple-100 text-sm mt-1">Tìm việc làm dễ dàng hơn</p>
+                    <Link to="/" className="inline-flex flex-col items-center gap-2">
+                        <img src={Logo} alt="JobHot Logo" className="h-28 w-auto" />
+                    </Link>
                 </div>
 
                 <div className="bg-white rounded-2xl p-8 shadow-xl">

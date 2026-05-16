@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Logo from '../assets/img/Logo.png';
 
 const MOCK_USERS = [
-    { id: 1, name: 'Nguyễn Văn A', email: 'a@email.com', role: 'user', joined: '2026-05-01', status: 'active' },
+    { id: 1, name: 'Nguyễn Văn A', email: 'a@email.com', role: 'job_seeker', joined: '2026-05-01', status: 'active' },
     { id: 2, name: 'Trần Thị B', email: 'b@email.com', role: 'employer', joined: '2026-05-02', status: 'active' },
-    { id: 3, name: 'Lê Văn C', email: 'c@email.com', role: 'user', joined: '2026-05-03', status: 'active' },
+    { id: 3, name: 'Lê Văn C', email: 'c@email.com', role: 'job_seeker', joined: '2026-05-03', status: 'active' },
     { id: 4, name: 'Phạm Thị D', email: 'd@email.com', role: 'employer', joined: '2026-05-04', status: 'suspended' },
-    { id: 5, name: 'Hoàng E', email: 'e@email.com', role: 'user', joined: '2026-05-05', status: 'active' },
+    { id: 5, name: 'Hoàng E', email: 'e@email.com', role: 'job_seeker', joined: '2026-05-05', status: 'active' },
 ];
 
 const MOCK_JOBS = [
@@ -33,9 +34,9 @@ const RoleBadge = ({ role }) => {
     const cfg = {
         admin: { label: 'Admin', cls: 'bg-purple-100 text-purple-700' },
         employer: { label: 'Nhà tuyển', cls: 'bg-blue-100 text-blue-700' },
-        user: { label: 'Ứng viên', cls: 'bg-green-100 text-green-700' },
+        job_seeker: { label: 'Ứng viên', cls: 'bg-green-100 text-green-700' },
     };
-    const { label, cls } = cfg[role] || cfg.user;
+    const { label, cls } = cfg[role] || cfg.job_seeker;
     return <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${cls}`}>{label}</span>;
 };
 
@@ -144,7 +145,7 @@ const UsersTab = ({ users, setUsers }) => {
                 <select value={filterRole} onChange={e => setFilterRole(e.target.value)}
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-purple-400 bg-white">
                     <option value="all">Tất cả</option>
-                    <option value="user">Ứng viên</option>
+                    <option value="job_seeker">Ứng viên</option>
                     <option value="employer">Nhà tuyển dụng</option>
                     <option value="admin">Admin</option>
                 </select>
@@ -262,8 +263,10 @@ const AdminDashboard = () => {
             {/* Sidebar */}
             <aside className="w-56 bg-white border-r border-gray-100 flex flex-col shrink-0">
                 <div className="px-5 py-4 border-b border-gray-100">
-                    <div className="font-bold text-xl text-purple-600 tracking-tight">Job<span className="text-yellow-400">Hot</span></div>
-                    <div className="text-xs text-gray-400 mt-0.5">Quản trị hệ thống</div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <img src={Logo} alt="JobHot Logo" className="h-16 ml-8 mt-5 w-auto" />
+                    </div>
+                    <div className="text-xs text-gray-400 ml-8 ">Quản trị hệ thống</div>
                 </div>
 
                 <nav className="flex-1 p-3">
@@ -271,7 +274,7 @@ const AdminDashboard = () => {
                         <button key={t.id} onClick={() => setActiveTab(t.id)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-1 transition-all font-medium text-left ${activeTab === t.id ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <span>{t.icon}</span>{t.label}
-                        </button>
+                        </button>   
                     ))}
                 </nav>
 

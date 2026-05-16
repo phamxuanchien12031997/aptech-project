@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import Logo from '../assets/img/Logo.png';
 
 // CONFIG
 // The base URL for all API calls.
 // Every fetch goes to /server/index.php with a different ?action= param.
-const API = '/server/index.php';
+const API = 'http://localhost:8888/aptech-project/server/index.php';
 
 // COMPONENT: SpinnerIcon
 // A small spinning SVG shown inside the submit button while loading.
@@ -158,6 +159,8 @@ const LoginPage = () => {
                 password: password,
             });
 
+            console.log('Login response:', response.data);
+
             // Pull the user data out of the response
             const userData = response.data.data;
             const token = userData.token;
@@ -223,8 +226,9 @@ const LoginPage = () => {
 
                 {/* Site logo + tagline above the card */}
                 <div className="text-center mb-6">
-                    <Link to="/" className="text-white font-bold text-3xl tracking-tight">JobHot</Link>
-                    <p className="text-purple-100 text-sm mt-1">Tìm việc làm dễ dàng hơn</p>
+                    <Link to="/" className="inline-flex flex-col items-center gap-2">
+                        <img src={Logo} alt="JobHot Logo" className="h-28 w-auto" />
+                    </Link>
                 </div>
 
                 <div className="bg-white rounded-2xl p-8 shadow-xl">
@@ -234,7 +238,7 @@ const LoginPage = () => {
                     {/* Demo account hint box */}
                     <div className="mb-4 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-700">
                         <strong>Demo Admin:</strong> admin@jobhot.vn / Admin@123
-                    </div>
+                    </div>  
 
                     {/* Server error box — hidden when serverError is empty */}
                     <ServerErrorBox message={serverError} />

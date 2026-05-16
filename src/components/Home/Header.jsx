@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import Logo from '../../assets/img/Logo.png';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -43,8 +44,9 @@ const Header = () => {
             <div className="flex items-center px-8 py-4 max-w-7xl mx-auto">
 
                 {/* Logo */}
-                <Link to="/" className="text-white font-bold text-4xl mr-8 tracking-tight">
-                    Job<span className="text-yellow-300">Hot</span>
+                <Link to="/" className="flex items-center gap-2 mr-8">
+
+                    <img src={Logo} alt="JobHot Logo" className="h-24 w-auto" />
                 </Link>
 
                 {/* Navigation */}
