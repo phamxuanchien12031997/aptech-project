@@ -770,19 +770,34 @@ const ApplyModal = ({ job, onClose }) => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+        // Create FormData with all form fields + CV file
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('email', email);
+        formData.append('jobId', job.id);
+        formData.append('jobTitle', job.title);
+        formData.append('company', job.company);
+        formData.append('coverLetter', cover);
 
-        // TODO: Gửi hồ sơ ứng tuyển lên server PHP
-        // Cách làm:
-        //   1. Tạo FormData để có thể đính kèm file CV cùng với các trường text
-        //   2. Gửi POST request đến file PHP (ví dụ: /api/apply.php)
-        //   3. PHP lưu thông tin ứng tuyển (tên, email, jobId, cover letter) vào database
-        //   4. Nếu có file CV thì PHP lưu file vào thư mục trên server
-        //   5. PHP gửi email thông báo cho nhà tuyển dụng bằng PHPMailer
-        //   6. Nếu thành công thì gọi setSubmitted(true) để hiện màn hình thành công
-        //   7. Nếu thất bại thì hiện lỗi và tắt loading
-        //
+        // Attach CV if selected
+        if (cvFile) {
+            formData.append('cv', cvFile);
+        }
+
+        // Send POST to backend
+        const response = await fetch('/server/index.php?action=apply', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        // Show success/error based on response
+        if (data.success) {
+            setSubmitted(true);
+        } else {
+            setError(data.message || 'Có lỗi xảy ra...');
+        }
     };
 
     // Xác định chữ, màu nền và cursor của nút submit theo trạng thái loading
@@ -968,33 +983,35 @@ const ProfileTab = () => {
         setProfile(newProfile);
     };
 
-    const handleSave = (e) => {
-        e.preventDefault();
+    const handleSave = async (e) => {
+        // Create FormData with all profile fields
+        const formData = new FormData();
+        formData.append('name', profile.name);
+        formData.append('email', profile.email);
+        formData.append('phone', profile.phone);
+        // ... (all other profile fields)
 
-        // TODO: Gửi thông tin hồ sơ lên server PHP để lưu
-        // Cách làm:
-        //   1. Tạo FormData để có thể đính kèm file CV (nếu có)
-        //   2. Gửi POST request đến file PHP (ví dụ: /api/update-profile.php)
-        //   3. PHP cập nhật thông tin người dùng trong database theo email/ID
-        //   4. Nếu có file CV mới thì PHP lưu file vào thư mục trên server
-        //   5. Nếu thành công thì hiện thông báo "Đã lưu" trong 2.5 giây
-        //
-        // const formData = new FormData();
-        // formData.append('name', profile.name);
-        // formData.append('email', profile.email);
-        // formData.append('phone', profile.phone);
-        // formData.append('dob', profile.dob);
-        // ... (các trường còn lại)
-        // if (cvFile) { formData.append('cv', cvFile); }
-        // const response = await fetch('/api/update-profile.php', { method: 'POST', body: formData });
-        // const data = await response.json();
-        // if (data.success) {
-        //     setSaved(true);
-        //     setTimeout(() => setSaved(false), 2500);
-        // }
+        // Attach new CV if selected
+        if (cvFile) {
+            formData.append('cv', cvFile);
+        }
 
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+        // Send POST to backend
+        const response = await fetch('/server/index.php?action=update-profile', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        // Show success message for 2.5 seconds
+        if (data.success) {
+            setSaved(true);
+            setCvFile(null);
+            setTimeout(() => setSaved(false), 2500);
+        } else {
+            setError(data.message || 'Có lỗi xảy ra...');
+        }
     };
 
     const handleClickUpload = () => {
