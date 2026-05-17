@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Logo from '../assets/img/Logo.png';
 
 const MOCK_JOBS = [
     {
@@ -520,7 +521,10 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
 
             {/* Logo + subtitle */}
             <div style={{ padding: "20px 20px 12px", borderBottom: "1px solid #f3f4f6" }}>
-                <div style={{ fontWeight: 700, fontSize: 20, color: "#7c3aed", letterSpacing: -0.5 }}>JobHot</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <img src={Logo} alt="JobHot Logo" style={{ height: 32, width: "auto" }} />
+                    <div style={{ fontWeight: 700, fontSize: 20, color: "#7c3aed", letterSpacing: -0.5 }}>JobHot</div>
+                </div>
                 <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Trang nhà tuyển dụng</div>
             </div>
 
