@@ -2,12 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../assets/img/Logo.png';
 
-// ─────────────────────────────────────────────
-// MOCK DATA
-// Placeholder data used while there is no real backend connected.
-// Replace these with real API calls when ready.
-// ─────────────────────────────────────────────
-
 const MOCK_USERS = [
     { id: 1, name: 'Nguyễn Văn A', email: 'a@email.com', role: 'job_seeker', joined: '2026-05-01', status: 'active' },
     { id: 2, name: 'Trần Thị B', email: 'b@email.com', role: 'employer', joined: '2026-05-02', status: 'active' },
@@ -23,12 +17,9 @@ const MOCK_JOBS = [
     { id: 'JP004', title: 'Kỹ Sư Dữ Liệu', company: 'Samsung Vina', status: 'active', applicants: 9, posted: '2026-05-05' },
 ];
 
-
-// ─────────────────────────────────────────────
 // DATA: ROLE CONFIG
 // Maps a role string to its display label and Tailwind badge classes.
 // Used by the RoleBadge component.
-// ─────────────────────────────────────────────
 
 const ROLE_CONFIG = {
     admin: { label: 'Admin', cls: 'bg-purple-100 text-purple-700' },
@@ -36,12 +27,9 @@ const ROLE_CONFIG = {
     job_seeker: { label: 'Ứng viên', cls: 'bg-green-100 text-green-700' },
 };
 
-
-// ─────────────────────────────────────────────
 // DATA: JOB STATUS CONFIG
 // Maps a job status string to its display label and Tailwind badge classes.
 // Used by the JobStatusBadge component.
-// ─────────────────────────────────────────────
 
 const JOB_STATUS_CONFIG = {
     active: { label: 'Đang hoạt động', cls: 'bg-green-100 text-green-700' },
@@ -49,22 +37,16 @@ const JOB_STATUS_CONFIG = {
     closed: { label: 'Đã đóng', cls: 'bg-gray-100 text-gray-600' },
 };
 
-
-// ─────────────────────────────────────────────
 // HELPER: formatDate
-// Formats a date string into Vietnamese locale format (DD/MM/YYYY).
-// ─────────────────────────────────────────────
+// Formats a date string into locale format (DD/MM/YYYY).
 
 function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString('vi-VN');
 }
 
-
-// ─────────────────────────────────────────────
 // HELPER: getNavTabClasses
 // Returns Tailwind classes for a sidebar navigation button.
 // Active tab gets a purple highlight, inactive tabs are plain gray.
-// ─────────────────────────────────────────────
 
 function getNavTabClasses(isActive) {
     const base = 'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-1 transition-all font-medium text-left';
@@ -76,12 +58,9 @@ function getNavTabClasses(isActive) {
     }
 }
 
-
-// ─────────────────────────────────────────────
 // HELPER: getUserStatusClasses
 // Returns Tailwind classes for the user status badge pill.
 // Green for active, red for suspended.
-// ─────────────────────────────────────────────
 
 function getUserStatusClasses(status) {
     const base = 'text-xs px-2.5 py-1 rounded-full font-semibold';
@@ -93,11 +72,8 @@ function getUserStatusClasses(status) {
     }
 }
 
-
-// ─────────────────────────────────────────────
 // HELPER: getUserStatusLabel
-// Returns the Vietnamese label for a user status string.
-// ─────────────────────────────────────────────
+// Returns the label for a user status string.
 
 function getUserStatusLabel(status) {
     if (status === 'active') {
@@ -107,12 +83,9 @@ function getUserStatusLabel(status) {
     }
 }
 
-
-// ─────────────────────────────────────────────
 // HELPER: getToggleButtonClasses
 // Returns Tailwind classes for the lock/unlock button in the users table.
 // Red style when locking an active user, green style when unlocking.
-// ─────────────────────────────────────────────
 
 function getToggleButtonClasses(status) {
     const base = 'text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors';
@@ -124,11 +97,8 @@ function getToggleButtonClasses(status) {
     }
 }
 
-
-// ─────────────────────────────────────────────
 // HELPER: getToggleButtonLabel
 // Returns the label for the lock/unlock button.
-// ─────────────────────────────────────────────
 
 function getToggleButtonLabel(status) {
     if (status === 'active') {
@@ -138,12 +108,9 @@ function getToggleButtonLabel(status) {
     }
 }
 
-
-// ─────────────────────────────────────────────
 // HELPER: getRowClasses
 // Returns Tailwind classes for alternating table row background colors.
 // Even rows are white, odd rows are very light gray.
-// ─────────────────────────────────────────────
 
 function getRowClasses(index) {
     const base = 'border-t border-gray-50';
@@ -155,12 +122,9 @@ function getRowClasses(index) {
     }
 }
 
-
-// ─────────────────────────────────────────────
 // COMPONENT: StatCard
 // A single summary card showing a label, a large number, and an icon.
 // Used in the Overview tab's four-card grid.
-// ─────────────────────────────────────────────
 
 function StatCard({ label, value, icon, color, bg }) {
     return (
@@ -178,12 +142,9 @@ function StatCard({ label, value, icon, color, bg }) {
     );
 }
 
-
-// ─────────────────────────────────────────────
 // COMPONENT: RoleBadge
 // A small colored pill showing a user's role.
 // Falls back to "job_seeker" style if the role string is unrecognised.
-// ─────────────────────────────────────────────
 
 function RoleBadge({ role }) {
     let config = ROLE_CONFIG[role];
@@ -200,12 +161,9 @@ function RoleBadge({ role }) {
     );
 }
 
-
-// ─────────────────────────────────────────────
 // COMPONENT: JobStatusBadge
 // A small colored pill showing a job's current status.
 // Falls back to "closed" style if the status string is unrecognised.
-// ─────────────────────────────────────────────
 
 function JobStatusBadge({ status }) {
     let config = JOB_STATUS_CONFIG[status];
@@ -222,8 +180,6 @@ function JobStatusBadge({ status }) {
     );
 }
 
-
-// ─────────────────────────────────────────────
 // COMPONENT: OverviewTab
 // The admin dashboard home screen.
 // Shows four stat cards and two "recent items" panels (users and jobs).
@@ -231,7 +187,6 @@ function JobStatusBadge({ status }) {
 // Props:
 //   users - full users array from root state
 //   jobs  - full jobs array from root state
-// ─────────────────────────────────────────────
 
 function OverviewTab({ users, jobs }) {
 
@@ -328,8 +283,6 @@ function OverviewTab({ users, jobs }) {
     );
 }
 
-
-// ─────────────────────────────────────────────
 // COMPONENT: UsersTab
 // Lists all users with a search bar and role filter.
 // Each row has a lock/unlock button (hidden for admin accounts).
@@ -337,14 +290,12 @@ function OverviewTab({ users, jobs }) {
 // Props:
 //   users    - the users array from root state
 //   setUsers - setter to toggle a user's status
-// ─────────────────────────────────────────────
 
 function UsersTab({ users, setUsers }) {
     const [search, setSearch] = useState('');
     const [filterRole, setFilterRole] = useState('all');
 
-
-    // ── Filter the users list ──
+    //Filter the users list
     // Apply the role filter first, then apply the search keyword.
 
     const filteredUsers = users.filter(function (user) {
@@ -364,8 +315,7 @@ function UsersTab({ users, setUsers }) {
         return roleMatch && keywordMatch;
     });
 
-
-    // ── toggleStatus ──
+    //toggleStatus
     // Flips a single user between "active" and "suspended".
     // Rebuilds each user object manually (no spread).
 
@@ -396,8 +346,7 @@ function UsersTab({ users, setUsers }) {
         setUsers(updated);
     }
 
-
-    // ── Render ──
+    //Render
 
     const columnHeaders = ['Người dùng', 'Vai trò', 'Ngày tham gia', 'Trạng thái', 'Hành động'];
 
@@ -502,8 +451,6 @@ function UsersTab({ users, setUsers }) {
     );
 }
 
-
-// ─────────────────────────────────────────────
 // COMPONENT: JobsTab
 // Lists all job postings. Pending jobs have an "Approve" button.
 // All jobs have a "Delete" button.
@@ -511,11 +458,10 @@ function UsersTab({ users, setUsers }) {
 // Props:
 //   jobs    - the jobs array from root state
 //   setJobs - setter to approve or remove a job
-// ─────────────────────────────────────────────
 
 function JobsTab({ jobs, setJobs }) {
 
-    // ── approve ──
+    //approve
     // Changes a pending job's status to "active".
     // Rebuilds each job object manually (no spread).
 
@@ -539,7 +485,7 @@ function JobsTab({ jobs, setJobs }) {
     }
 
 
-    // ── remove ──
+    //remove
     // Permanently removes a job from the list.
 
     function remove(id) {
@@ -547,8 +493,7 @@ function JobsTab({ jobs, setJobs }) {
         setJobs(updated);
     }
 
-
-    // ── Render ──
+    //Render
 
     return (
         <div className="p-6">
@@ -607,12 +552,9 @@ function JobsTab({ jobs, setJobs }) {
     );
 }
 
-
-// ─────────────────────────────────────────────
 // COMPONENT: AdminDashboard  (main / entry point)
 // Holds the top-level state (users, jobs, active tab),
 // renders the sidebar and the currently active tab panel.
-// ─────────────────────────────────────────────
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -639,7 +581,7 @@ const AdminDashboard = () => {
     ];
 
 
-    // ── handleLogout ──
+    //handleLogout
     // Removes all stored auth keys and redirects to the home page.
 
     function handleLogout() {
@@ -651,9 +593,8 @@ const AdminDashboard = () => {
         navigate('/');
     }
 
-
-    // ── getActiveTabLabel ──
-    // Returns the Vietnamese label for the currently active tab.
+    //getActiveTabLabel
+    // Returns the label for the currently active tab.
     // Used in the top header bar.
 
     function getActiveTabLabel() {
@@ -666,13 +607,12 @@ const AdminDashboard = () => {
     }
 
 
-    // ── Active job count ──
+    //Active job count
     // Shown in the top bar badge.
 
     const activeJobCount = jobs.filter(function (j) { return j.status === 'active'; }).length;
 
-
-    // ── Render ──
+    //Render
 
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden">
