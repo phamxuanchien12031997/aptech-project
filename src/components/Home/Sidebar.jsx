@@ -77,9 +77,9 @@ async function sendFiltersToBackend(workType, level, locationName, onFilter) {
     // If no filters are active at all, just call the base URL with no parameters.
     let url;
     if (queryString === '') {
-        url = 'http://localhost:8888/aptech-project/server/index.php';
+        url = '/server/index.php';
     } else {
-        url = 'http://localhost:8888/aptech-project/server/index.php?' + queryString;
+        url = '/server/index.php?' + queryString;
     }
 
     // Call the PHP endpoint and wait for the response.
