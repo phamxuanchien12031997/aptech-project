@@ -1,11 +1,33 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../../assets/img/Logo.png';
+import UserProfileModal from './UserProfileModal';
+import SavedJobsModal from './SavedJobsModal';
+import AppliedJobsModal from './AppliedJobsModal';
 
 const Header = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const name = localStorage.getItem('name');
+    const email = localStorage.getItem('email');
+
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [savedJobsModalOpen, setSavedJobsModalOpen] = useState(false);
+    const [appliedJobsModalOpen, setAppliedJobsModalOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    // Đóng dropdown khi click ra ngoài
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Xóa toàn bộ thông tin người dùng khỏi localStorage rồi về trang chủ
     const handleLogout = () => {
@@ -14,6 +36,7 @@ const Header = () => {
         localStorage.removeItem('name');
         localStorage.removeItem('email');
         localStorage.removeItem('industry');
+        setDropdownOpen(false);
         navigate('/');
     };
 
@@ -23,7 +46,26 @@ const Header = () => {
             return '/admin';
         if (role === 'employer')
             return '/employer';
-        return '/user';
+        // Job seekers stay on HomePage
+        return '/';
+    };
+
+    // Mở modal chỉnh sửa thông tin
+    const handleEditProfile = () => {
+        setDropdownOpen(false);
+        setProfileModalOpen(true);
+    };
+
+    // Mở modal việc đã lưu
+    const handleOpenSavedJobs = () => {
+        setDropdownOpen(false);
+        setSavedJobsModalOpen(true);
+    };
+
+    // Mở modal việc đã ứng tuyển
+    const handleOpenAppliedJobs = () => {
+        setDropdownOpen(false);
+        setAppliedJobsModalOpen(true);
     };
 
     // Lấy chữ cái đầu của tên để hiển thị trong avatar
@@ -32,11 +74,10 @@ const Header = () => {
         avatarLetter = name.charAt(0).toUpperCase();
     }
 
-    // Lấy tên ngắn (từ cuối) để hiển thị trên header
-    let shortName = 'Tài khoản';
+    // Hiển thị full name
+    let displayName = 'Tài khoản';
     if (name) {
-        const nameParts = name.split(' ');
-        shortName = nameParts[nameParts.length - 1];
+        displayName = name;
     }
 
     return (
@@ -55,25 +96,108 @@ const Header = () => {
                 {/* Khu vực bên phải: hiển thị theo trạng thái đăng nhập */}
                 <div className="flex items-center gap-3">
 
-                    {/* Đã đăng nhập: hiện avatar + tên + nút đăng xuất */}
+                    {/* Đã đăng nhập: hiện avatar + tên với dropdown */}
                     {token && (
-                        <>
+                        <div className="relative" ref={dropdownRef}>
                             <button
-                                onClick={() => navigate(getDashboardPath())}
-                                className="flex items-center gap-2 text-white/90 px-3 py-1.5 rounded-lg hover:bg-white/15 transition-colors text-sm"
+                                onClick={() => setDropdownOpen(!dropdownOpen)}
+                                className="flex items-center gap-2 text-white/90 px-3 py-2 rounded-lg hover:bg-white/15 transition-colors"
                             >
-                                <div className="w-7 h-7 rounded-full bg-white/30 flex items-center justify-center text-white text-xs font-bold">
+                                <div className="w-9 h-9 rounded-full bg-white/30 flex items-center justify-center text-white text-sm font-bold">
                                     {avatarLetter}
                                 </div>
-                                <span className="font-medium">{shortName}</span>
+                                <div className="flex flex-col items-start">
+                                    <span className="font-semibold text-sm">{displayName}</span>
+                                    {email && <span className="text-xs text-white/70">{email}</span>}
+                                </div>
+                                <svg
+                                    className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
-                            <button
-                                onClick={handleLogout}
-                                className="bg-white/15 border border-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/25 transition-colors"
-                            >
-                                Đăng xuất
-                            </button>
-                        </>
+
+                            {/* Dropdown Menu */}
+                            {dropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                                    {/* User Info */}
+                                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                                        <div className="font-semibold text-sm text-gray-800">{displayName}</div>
+                                        {email && <div className="text-xs text-gray-500 mt-0.5">{email}</div>}
+                                    </div>
+
+                                    {/* Menu Items */}
+                                    <div className="py-2">
+                                        {/* Chỉnh sửa thông tin - chỉ hiện cho job_seeker */}
+                                        {role === 'job_seeker' && (
+                                            <>
+                                                <button
+                                                    onClick={handleEditProfile}
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-3"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                    Chỉnh sửa thông tin
+                                                </button>
+
+                                                <button
+                                                    onClick={handleOpenSavedJobs}
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-3"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                    </svg>
+                                                    Việc làm đã lưu
+                                                </button>
+
+                                                <button
+                                                    onClick={handleOpenAppliedJobs}
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-3"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    Việc đã ứng tuyển
+                                                </button>
+
+                                                <div className="my-1 border-t border-gray-100"></div>
+                                            </>
+                                        )}
+
+                                        {/* Dashboard - cho admin và employer */}
+                                        {(role === 'admin' || role === 'employer') && (
+                                            <button
+                                                onClick={() => {
+                                                    setDropdownOpen(false);
+                                                    navigate(getDashboardPath());
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors flex items-center gap-3"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                                </svg>
+                                                Dashboard
+                                            </button>
+                                        )}
+
+                                        {/* Đăng xuất */}
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            Đăng xuất
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {/* Chưa đăng nhập: hiện nút đăng nhập và đăng ký */}
@@ -88,6 +212,26 @@ const Header = () => {
                         </>
                     )}
                 </div>
+
+                {/* User Profile Modal */}
+                <UserProfileModal
+                    isOpen={profileModalOpen}
+                    onClose={() => setProfileModalOpen(false)}
+                    userName={name}
+                    userEmail={email}
+                />
+
+                {/* Saved Jobs Modal */}
+                <SavedJobsModal
+                    isOpen={savedJobsModalOpen}
+                    onClose={() => setSavedJobsModalOpen(false)}
+                />
+
+                {/* Applied Jobs Modal */}
+                <AppliedJobsModal
+                    isOpen={appliedJobsModalOpen}
+                    onClose={() => setAppliedJobsModalOpen(false)}
+                />
             </div>
         </header>
     );

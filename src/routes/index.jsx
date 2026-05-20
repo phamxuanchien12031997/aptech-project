@@ -5,7 +5,6 @@ import HomePage from '../pages/Home';
 import LoginPage from '../pages/Login';
 import RegisterPage from '../pages/Register';
 import ForgotPasswordPage from '../pages/ForgotPassword';
-import UserPage from '../pages/User';
 import EmployerPage from '../pages/Employer';
 import AdminDashboard from '../pages/Dashboard';
 import JobDetailPage from '../pages/JobDetail';
@@ -18,12 +17,6 @@ const AppRoutes = () => (
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
             <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
-
-            <Route path="/user" element={
-                <PrivateRoute allowedRoles={['job_seeker']}>
-                    <UserPage />
-                </PrivateRoute>
-            } />
 
             <Route path="/employer" element={
                 <PrivateRoute allowedRoles={['employer']}>

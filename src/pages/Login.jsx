@@ -186,7 +186,8 @@ const LoginPage = () => {
             } else if (role === 'employer') {
                 navigate('/employer');
             } else {
-                navigate('/user');
+                // Job seekers stay on HomePage after login
+                navigate('/');
             }
 
         } catch (err) {
@@ -238,7 +239,7 @@ const LoginPage = () => {
                     {/* Demo account hint box */}
                     <div className="mb-4 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-700">
                         <strong>Demo Admin:</strong> admin@jobhot.vn / Admin@123
-                    </div>  
+                    </div>
 
                     {/* Server error box — hidden when serverError is empty */}
                     <ServerErrorBox message={serverError} />
