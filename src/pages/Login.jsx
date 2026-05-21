@@ -6,7 +6,7 @@ import Logo from '../assets/img/Logo.png';
 // CONFIG
 // The base URL for all API calls.
 // Every fetch goes to /server/index.php with a different ?action= param.
-const API = 'http://localhost:8888/aptech-project/server/index.php';
+const API = '/server/index.php';
 
 // COMPONENT: SpinnerIcon
 // A small spinning SVG shown inside the submit button while loading.
@@ -186,8 +186,7 @@ const LoginPage = () => {
             } else if (role === 'employer') {
                 navigate('/employer');
             } else {
-                // Job seekers stay on HomePage after login
-                navigate('/');
+                navigate('/user');
             }
 
         } catch (err) {

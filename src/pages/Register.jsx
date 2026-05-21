@@ -7,7 +7,7 @@ import Logo from '../assets/img/Logo.png';
 // The base URL for all API calls.
 // Every fetch goes to /server/index.php with a different ?action= param.
 
-const API = 'http://localhost:8888/aptech-project/server/index.php';
+const API = '/server/index.php';
 
 // DATA: INDUSTRIES
 // The dropdown options shown to job-seekers in Step 2.
@@ -535,7 +535,8 @@ function StepRole({ onBack, onSubmit, loading, serverError }) {
                     className="flex-1 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-purple-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading && <SpinnerIcon />}
-                    {loading ? 'Đang tạo tài khoản...' : 'Hoàn tất đăng ký'}
+                    {loading && 'Đang tạo tài khoản...'}
+                    {!loading && 'Hoàn tất đăng ký'}
                 </button>
             </div>
 
@@ -565,7 +566,8 @@ function ProgressBar({ currentStep }) {
                         {/* Circle + label */}
                         <div className="flex items-center gap-1.5">
                             <div className={getStepCircleClasses(isDone, isActive)}>
-                                {isDone ? '✓' : stepNumber}
+                                {isDone && '✓'}
+                                {!isDone && stepNumber}
                             </div>
                             <span className={getStepLabelClasses(isActive)}>{label}</span>
                         </div>
