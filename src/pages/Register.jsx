@@ -248,6 +248,30 @@ function StepInfo({ onNext }) {
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [errors, setErrors] = useState({});
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [avatarBase64, setAvatarBase64] = useState('');
+
+    // ── Avatar handler ──
+    // Reads the selected image file, validates it, then stores a
+    // Base64 preview so we can show it immediately without uploading.
+    function handleAvatarChange(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            alert('Vui lòng chọn tệp ảnh (JPG, PNG, ...).');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Ảnh tối đa 2 MB.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+            setAvatarPreview(ev.target.result);
+            setAvatarBase64(ev.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
 
     // ── Validation ──
     // Checks all four fields and fills the errors object.
@@ -292,7 +316,7 @@ function StepInfo({ onNext }) {
         event.preventDefault();
 
         if (validate()) {
-            onNext({ fullName: fullName, email: email, password: password });
+            onNext({ fullName: fullName, email: email, password: password, avatar: avatarBase64 });
         }
     }
 
@@ -320,6 +344,29 @@ function StepInfo({ onNext }) {
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 
             <ServerErrorBox message="" />
+
+            {/* ── Avatar upload (optional) ── */}
+            <div className="flex flex-col items-center gap-2">
+                <div className="relative">
+                    {/* Preview or default avatar */}
+                    {avatarPreview ? (
+                        <img src={avatarPreview} alt="avatar" className="w-20 h-20 rounded-full object-cover border-2 border-purple-400 shadow" />
+                    ) : (
+                        <div className="w-20 h-20 rounded-full bg-purple-100 border-2 border-dashed border-purple-300 flex items-center justify-center text-3xl select-none">
+                            👤
+                        </div>
+                    )}
+                    {/* Camera button overlay */}
+                    <label htmlFor="avatarInput" className="absolute -bottom-1 -right-1 w-7 h-7 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center cursor-pointer shadow transition-colors" title="Chọn ảnh đại diện">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <input id="avatarInput" type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                    </label>
+                </div>
+                <p className="text-xs text-gray-400">Ảnh đại diện <span className="text-gray-300">(tuỳ chọn, tối đa 2 MB)</span></p>
+            </div>
 
             {/* Full name field */}
             <div className="flex flex-col gap-1">
