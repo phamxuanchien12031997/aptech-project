@@ -8,30 +8,39 @@ import ForgotPasswordPage from '../pages/ForgotPassword';
 import EmployerPage from '../pages/Employer';
 import AdminDashboard from '../pages/Dashboard';
 import JobDetailPage from '../pages/JobDetail';
+import ContactPage from '../pages/Contact';
+import AboutPage from '../pages/About';
 
 const AppRoutes = () => (
     <BrowserRouter>
         <Routes>
+            {/* Public / landing pages */}
             <Route path="/" element={<PublicRoute><HomePage /></PublicRoute>} />
             <Route path="/jobs/:id" element={<PublicRoute><JobDetailPage /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
             <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+            <Route path="/contact" element={<PublicRoute><ContactPage /></PublicRoute>} />
+            <Route path="/about" element={<PublicRoute><AboutPage /></PublicRoute>} />
 
+            {/* Employer dashboard */}
             <Route path="/employer" element={
                 <PrivateRoute allowedRoles={['employer']}>
                     <EmployerPage />
                 </PrivateRoute>
             } />
 
+            {/* Admin dashboard */}
             <Route path="/admin" element={
                 <PrivateRoute allowedRoles={['admin']}>
                     <AdminDashboard />
                 </PrivateRoute>
             } />
 
+            {/* Aliases */}
             <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
 
+            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     </BrowserRouter>

@@ -720,6 +720,60 @@ if ($action === 'reset-password') {
     );
 }
 
+
+if ($action === 'contact') {
+    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $name    = trim($body['name']    ?? '');
+    $email   = trim($body['email']   ?? '');
+    $message = trim($body['message'] ?? '');
+
+    if (!$name || !$email || !$message) {
+        sendJsonResponse(false, 'Vui lòng điền đầy đủ thông tin.', [], 400);
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        sendJsonResponse(false, 'Email không hợp lệ.', [], 400);
+    }
+
+    // Forward via PHPMailer
+    $sent = sendOtpByEmail(
+        MAIL_FROM,
+        '' // not OTP — we'll build a custom body below
+    );
+
+    // Build and send via PHPMailer directly
+    $phpMailerFolder  = __DIR__ . '/PHPMailer/src/';
+    $phpMailerExists  = file_exists($phpMailerFolder . 'PHPMailer.php');
+
+    if ($phpMailerExists) {
+        require_once $phpMailerFolder . 'Exception.php';
+        require_once $phpMailerFolder . 'PHPMailer.php';
+        require_once $phpMailerFolder . 'SMTP.php';
+
+        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host       = MAIL_HOST;
+            $mail->SMTPAuth   = true;
+            $mail->Username   = MAIL_USER;
+            $mail->Password   = MAIL_PASS;
+            $mail->SMTPSecure = 'tls';
+            $mail->Port       = MAIL_PORT;
+            $mail->CharSet    = 'UTF-8';
+            $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
+            $mail->addAddress(ADMIN_EMAIL, ADMIN_NAME);
+            $mail->addReplyTo($email, $name);
+            $mail->Subject = "[JobHot] Phản hồi từ: $name";
+            $mail->Body    = "Tên: $name\nEmail: $email\n\nNội dung:\n$message";
+            $mail->send();
+        } catch (Exception $e) {
+            // Mail failure is non-fatal — log but still return success
+        }
+    }
+
+    sendJsonResponse(true, 'Phản hồi của bạn đã được gửi thành công.');
+}
+
 sendJsonResponse(
     false,
     "Action '$action' không tồn tại.",

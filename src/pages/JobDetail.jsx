@@ -316,18 +316,18 @@ function CompanyLogo({ logo, companyName }) {
 // ─────────────────────────────────────────────
 
 const JobDetailPage = () => {
-    const { id }   = useParams();
+    const { id } = useParams();
     const navigate = useNavigate();
 
-    const [job,     setJob]     = useState(null);
-    const [saved,   setSaved]   = useState(false);
+    const [job, setJob] = useState(null);
+    const [saved, setSaved] = useState(false);
     const [applied, setApplied] = useState(false);
 
 
     // ── Load job data on mount ──
     // Looks up the job by id. If not found, redirects to the home page.
 
-    useEffect(function() {
+    useEffect(function () {
         const jobData = mockJobDetails[id];
 
         if (jobData) {
@@ -404,7 +404,7 @@ const JobDetailPage = () => {
 
                 {/* Back button */}
                 <button
-                    onClick={function() { navigate(-1); }}
+                    onClick={function () { navigate(-1); }}
                     className="flex items-center gap-2 text-gray-600 hover:text-purple-600 mb-6 transition-colors"
                 >
                     <span>←</span>
@@ -469,7 +469,7 @@ const JobDetailPage = () => {
                         {/* Responsibilities */}
                         <Section icon="✅" title="Trách nhiệm công việc">
                             <ul className="space-y-2">
-                                {job.responsibilities.map(function(item, index) {
+                                {job.responsibilities.map(function (item, index) {
                                     return (
                                         <li key={index} className="flex items-start gap-3">
                                             <span className="text-purple-600 mt-1">•</span>
@@ -483,7 +483,7 @@ const JobDetailPage = () => {
                         {/* Requirements */}
                         <Section icon="📌" title="Yêu cầu công việc">
                             <ul className="space-y-2">
-                                {job.requirements.map(function(item, index) {
+                                {job.requirements.map(function (item, index) {
                                     return (
                                         <li key={index} className="flex items-start gap-3">
                                             <span className="text-purple-600 mt-1">•</span>
@@ -497,7 +497,7 @@ const JobDetailPage = () => {
                         {/* Benefits */}
                         <Section icon="🎁" title="Quyền lợi">
                             <ul className="space-y-2">
-                                {job.benefits.map(function(item, index) {
+                                {job.benefits.map(function (item, index) {
                                     return (
                                         <li key={index} className="flex items-start gap-3">
                                             <span className="text-green-600 mt-1">✓</span>
@@ -549,11 +549,11 @@ const JobDetailPage = () => {
                         <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm sticky top-6">
                             <h3 className="font-bold text-gray-800 mb-4">Thông tin chung</h3>
                             <div className="space-y-3">
-                                <InfoItem icon="💼"  label="Cấp bậc"           value={job.level}                  />
-                                <InfoItem icon="⏱️"  label="Kinh nghiệm"       value={job.experience}             />
-                                <InfoItem icon="👥"  label="Số lượng"          value={job.quantity + ' người'}    />
-                                <InfoItem icon="⚧️"  label="Giới tính"         value={job.gender}                 />
-                                <InfoItem icon="📅"  label="Hạn nộp"           value={job.deadline}               />
+                                <InfoItem icon="💼" label="Cấp bậc" value={job.level} />
+                                <InfoItem icon="⏱️" label="Kinh nghiệm" value={job.experience} />
+                                <InfoItem icon="👥" label="Số lượng" value={job.quantity + ' người'} />
+                                <InfoItem icon="⚧️" label="Giới tính" value={job.gender} />
+                                <InfoItem icon="📅" label="Hạn nộp" value={job.deadline} />
                                 <InfoItem icon={urgentIcon} label="Thời gian còn lại" value={job.daysLeft + ' ngày'} />
                             </div>
 

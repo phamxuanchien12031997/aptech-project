@@ -457,6 +457,7 @@ function StepInfo({ onNext }) {
 function StepRole({ onBack, onSubmit, loading, serverError }) {
     const [role, setRole] = useState('');
     const [industry, setIndustry] = useState('');
+    const [company, setCompany] = useState('');
     const [error, setError] = useState('');
 
 
@@ -472,7 +473,7 @@ function StepRole({ onBack, onSubmit, loading, serverError }) {
             return;
         }
 
-        onSubmit({ role: role, industry: industry });
+        onSubmit({ role: role, industry: industry, company: company });
     }
 
 
@@ -563,6 +564,25 @@ function StepRole({ onBack, onSubmit, loading, serverError }) {
                             );
                         })}
                     </select>
+                </div>
+            )}
+
+            {/* ── Company name field ── */}
+            {/* Only shown when the user picked "Nhà tuyển dụng" */}
+            {role === 'employer' && (
+                <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-gray-700">
+                        Tên công ty{' '}
+                        <span className="text-gray-400 font-normal">(tuỳ chọn)</span>
+                    </label>
+                    <input
+                        type="text"
+                        placeholder="Ví dụ: FPT Software, MOMO..."
+                        value={company}
+                        onChange={function (e) { setCompany(e.target.value); }}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-purple-500"
+                    />
+                    <p className="text-xs text-gray-400">Bạn có thể cập nhật thông tin này sau trong hồ sơ công ty.</p>
                 </div>
             )}
 
@@ -699,6 +719,8 @@ const RegisterPage = () => {
                 password: basicInfo.password,
                 role: roleData.role,
                 industry: roleData.industry,
+                company: roleData.company,
+                avatar: basicInfo.avatar,
             });
 
             // Registration succeeded — show the success screen

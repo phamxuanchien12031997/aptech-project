@@ -79,14 +79,14 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
 
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center z-[9999] p-6"
+            className="fixed inset-0 flex items-center justify-center z-9999 p-6"
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)' }}
             onClick={handleBackdropClick}
         >
             <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl">
 
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-purple-600 to-purple-500">
+                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-linear-to-r from-purple-600 to-purple-500">
                     <h2 className="text-xl font-bold text-white">Chỉnh sửa thông tin cá nhân</h2>
                     <button
                         onClick={onClose}
@@ -101,7 +101,7 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
 
                     {/* Avatar và tên người dùng */}
                     <div className="flex items-center gap-5 mb-6 pb-6 border-b border-gray-100">
-                        <div className="w-20 h-20 rounded-full bg-purple-600 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                        <div className="w-20 h-20 rounded-full bg-purple-600 flex items-center justify-center text-white text-2xl font-bold shrink-0">
                             {getInitials(profile.name)}
                         </div>
                         <div>

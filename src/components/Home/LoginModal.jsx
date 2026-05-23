@@ -26,7 +26,7 @@ const LoginModal = ({ isOpen, onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center z-[9999] p-4"
+            className="fixed inset-0 flex items-center justify-center z-9999 p-4"
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)' }}
             onClick={handleBackdropClick}
         >

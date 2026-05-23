@@ -1,21 +1,33 @@
 import { Navigate, useLocation } from 'react-router-dom';
 
+// PublicRoute
+// - If rememberMe flag is set AND a token exists, auto-redirect the user
+//   to their dashboard when they hit login/register pages.
+// - All other public pages (home, jobs, contact, about) remain accessible.
+
 const PublicRoute = ({ children }) => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
+    const rememberMe = localStorage.getItem('rememberMe');
     const location = useLocation();
 
-    // Nếu đã đăng nhập và đang ở trang login/register, redirect về dashboard tương ứng
-    if (token && (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password')) {
-        if (role === 'admin')
-            return <Navigate to="/admin" replace />;
-        if (role === 'employer')
-            return <Navigate to="/employer" replace />;
-        // Job seekers redirect về HomePage
+    const authOnlyPaths = ['/login', '/register', '/forgot-password'];
+
+    // If logged in with remember-me and visiting an auth-only page, skip to dashboard
+    if (token && rememberMe === 'true' && authOnlyPaths.includes(location.pathname)) {
+        if (role === 'admin') return <Navigate to="/admin" replace />;
+        if (role === 'employer') return <Navigate to="/employer" replace />;
         return <Navigate to="/" replace />;
     }
 
-    // Cho phép truy cập các trang public khác (như HomePage, JobDetail)
+    // If logged in without remember-me, still redirect away from auth pages
+    // (token exists from this session) to avoid confusion
+    if (token && authOnlyPaths.includes(location.pathname)) {
+        if (role === 'admin') return <Navigate to="/admin" replace />;
+        if (role === 'employer') return <Navigate to="/employer" replace />;
+        return <Navigate to="/" replace />;
+    }
+
     return children;
 };
 

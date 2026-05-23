@@ -102,6 +102,7 @@ const LoginPage = () => {
             const userData = response.data.data;
             const token = userData.token;
             const role = userData.role;
+            const name = userData.name;
             const industry = userData.industry;
 
             // Save to localStorage
