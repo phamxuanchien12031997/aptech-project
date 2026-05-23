@@ -48,7 +48,12 @@ function getDatabaseConnection(): PDO
 
     if ($connection === null) {
         try {
-            $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            $socket = '/opt/lampp/var/mysql/mysql.sock';
+            if (file_exists($socket)) {
+                $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4;unix_socket=' . $socket;
+            } else {
+                $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            }
 
             $connection = new PDO(
                 $dsn,
