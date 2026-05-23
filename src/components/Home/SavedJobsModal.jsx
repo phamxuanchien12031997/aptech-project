@@ -65,14 +65,14 @@ const SavedJobsModal = ({ isOpen, onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center z-[9999] p-6"
+            className="fixed inset-0 flex items-center justify-center z-9999 p-6"
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)' }}
             onClick={handleBackdropClick}
         >
             <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl">
 
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-purple-600 to-purple-500">
+                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-linear-to-r from-purple-600 to-purple-500">
                     <div>
                         <h2 className="text-xl font-bold text-white">Việc làm đã lưu</h2>
                         <p className="text-sm text-purple-100 mt-0.5">{savedJobs.length} việc làm</p>
