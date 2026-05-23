@@ -131,8 +131,8 @@ const Header = () => {
 
                                     {/* Menu Items */}
                                     <div className="py-2">
-                                        {/* Chỉnh sửa thông tin - chỉ hiện cho job_seeker */}
-                                        {role === 'job_seeker' && (
+                                        {/* Chỉnh sửa thông tin - chỉ hiện cho user (job seeker) */}
+                                        {role === 'user' && (
                                             <>
                                                 <button
                                                     onClick={handleEditProfile}
