@@ -28,76 +28,44 @@ const locations = ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng',
 // ─────────────────────────────────────────────
 // HELPER: sendFiltersToBackend
 //
-// Builds a URL with all three filters as query parameters,
+// Builds a URL with action=get-jobs plus all three filter params,
 // calls the PHP endpoint, and passes the result to onFilter.
 //
 // Any filter that is null (not selected) is simply left out of the URL.
 //
-// Example URL it might build:
-//   /server/index.php?workType=fulltime&level=staff&location=H%C3%A0+N%E1%BB%99i
+// Example URL:
+//   /server/index.php?action=get-jobs&workType=fulltime&level=staff&location=H%C3%A0+N%E1%BB%99i
 //
-// Your PHP file at /server/index.php should:
-//   1. Read the filters:  $_GET['workType'], $_GET['level'], $_GET['location']
-//   2. Query the database using those values (skip a filter if it's not set)
-//   3. Output the results as JSON:  echo json_encode($jobs);
-//
-// Parameters:
-//   workType     - string like "fulltime", or null if not selected
-//   level        - string like "staff", or null if not selected
-//   locationName - string like "Hà Nội", or null if not selected
-//   onFilter     - the callback prop from the parent; receives the job list
 // ─────────────────────────────────────────────
 
 async function sendFiltersToBackend(workType, level, locationName, onFilter) {
-    // Start with an empty query string and add each filter one by one.
-    // encodeURIComponent makes values safe to put in a URL
-    // (e.g. "Hà Nội" becomes "H%C3%A0+N%E1%BB%99i").
-    let queryString = '';
+    // FIX: always start with action=get-jobs so the PHP router picks the right handler.
+    // Previously the URL was built without this param, causing every filter request
+    // to fall through to the "action not found" catch-all and return a 404 JSON error.
+    let queryString = 'action=get-jobs';
 
     if (workType !== null) {
-        queryString = queryString + 'workType=' + encodeURIComponent(workType);
+        queryString = queryString + '&workType=' + encodeURIComponent(workType);
     }
 
     if (level !== null) {
-        // Add a "&" separator if something was already added before this
-        if (queryString !== '') {
-            queryString = queryString + '&';
-        }
-        queryString = queryString + 'level=' + encodeURIComponent(level);
+        queryString = queryString + '&level=' + encodeURIComponent(level);
     }
 
     if (locationName !== null) {
-        if (queryString !== '') {
-            queryString = queryString + '&';
-        }
-        queryString = queryString + 'location=' + encodeURIComponent(locationName);
+        queryString = queryString + '&location=' + encodeURIComponent(locationName);
     }
 
-    // Build the final URL.
-    // If no filters are active at all, just call the base URL with no parameters.
-    let url;
-    if (queryString === '') {
-        url = '/server/index.php';
-    } else {
-        url = '/server/index.php?' + queryString;
-    }
+    const url = '/server/index.php?' + queryString;
 
-    // Call the PHP endpoint and wait for the response.
-    // We wrap it in try/catch so a network error doesn't crash the page.
     try {
         const response = await fetch(url);
-
-        // Convert the raw HTTP response body into a JavaScript value.
-        // This works because PHP echoes JSON (echo json_encode($jobs)).
         const data = await response.json();
-
-        // Hand the job list up to the parent component so it can
-        // re-render the job listing grid with the filtered results.
-        onFilter(data);
-
+        // The PHP handler wraps results in { success, data: [...] }
+        // Fall back to the raw array if the response is already an array (legacy shape).
+        const jobs = Array.isArray(data) ? data : (data.data || []);
+        onFilter(jobs);
     } catch (error) {
-        // Something went wrong — network failure, PHP error, invalid JSON, etc.
-        // Log it so it shows up in the browser developer console (F12 → Console).
         console.error('Failed to fetch jobs from backend:', error);
     }
 }
@@ -122,8 +90,6 @@ function getButtonClasses(isSelected) {
 
 // ─────────────────────────────────────────────
 // HELPER: getDotClasses
-// Returns classes for the small dot indicator beside each button label.
-// Purple when selected, gray otherwise.
 // ─────────────────────────────────────────────
 
 function getDotClasses(isSelected) {
@@ -139,15 +105,13 @@ function getDotClasses(isSelected) {
 
 // ─────────────────────────────────────────────
 // HELPER: getLocationPillClasses
-// Returns classes for a city pill button.
-// Stays highlighted (purple border) when that city is selected.
 // ─────────────────────────────────────────────
 
 function getLocationPillClasses(isSelected) {
     const base = 'px-3 py-1.5 rounded-full text-xs border transition-colors';
 
     if (isSelected) {
-        return base + ' border-purple-400 text-purple-600';
+        return base + ' border-purple-400 text-purple-600 bg-purple-50';
     } else {
         return base + ' border-gray-200 text-gray-600 hover:border-purple-400 hover:text-purple-600';
     }
@@ -156,8 +120,6 @@ function getLocationPillClasses(isSelected) {
 
 // ─────────────────────────────────────────────
 // COMPONENT: FilterButton
-// A single clickable row inside Work Type or Level sections.
-// Shows a colored dot + label. Highlights when selected.
 // ─────────────────────────────────────────────
 
 function FilterButton({ label, isSelected, onClick }) {
@@ -172,103 +134,48 @@ function FilterButton({ label, isSelected, onClick }) {
 
 // ─────────────────────────────────────────────
 // COMPONENT: Sidebar
-// The main filter sidebar. Receives an "onFilter" prop
-// that gets called with the new job list whenever the user changes a filter.
 // ─────────────────────────────────────────────
 
 const Sidebar = ({ onFilter }) => {
 
-    // These track which filter button is currently selected in each group.
-    // null means nothing is selected in that group.
     const [selectedWorkType, setSelectedWorkType] = useState(null);
     const [selectedLevel, setSelectedLevel] = useState(null);
     const [selectedLocationName, setSelectedLocationName] = useState(null);
 
-
-    // ─────────────────────────────────────────
-    // HANDLER: handleWorkTypeClick
-    //
-    // Called when the user clicks a Work Type button.
-    // Clicking the already-selected button deselects it (sets to null).
-    // Clicking a different button selects the new one.
-    // Then sends ALL current filter values to the PHP backend.
-    // ─────────────────────────────────────────
+    // Count how many filters are currently active (for the "Reset" button)
+    const activeCount = [selectedWorkType, selectedLevel, selectedLocationName].filter(Boolean).length;
 
     function handleWorkTypeClick(id) {
-        let newWorkType;
-
-        if (selectedWorkType === id) {
-            newWorkType = null; // clicking the same button again deselects it
-        } else {
-            newWorkType = id;   // clicking a new button selects it
-        }
-
-        // Save the new value so the UI re-renders with the correct highlight
+        const newWorkType = selectedWorkType === id ? null : id;
         setSelectedWorkType(newWorkType);
-
-        // IMPORTANT: we pass newWorkType directly instead of selectedWorkType
-        // because React state updates are delayed — selectedWorkType still holds
-        // the OLD value at this point in the code.
         sendFiltersToBackend(newWorkType, selectedLevel, selectedLocationName, onFilter);
     }
 
-
-    // ─────────────────────────────────────────
-    // HANDLER: handleLevelClick
-    //
-    // Same pattern as handleWorkTypeClick but for the Level group.
-    // ─────────────────────────────────────────
-
     function handleLevelClick(id) {
-        let newLevel;
-
-        if (selectedLevel === id) {
-            newLevel = null;
-        } else {
-            newLevel = id;
-        }
-
+        const newLevel = selectedLevel === id ? null : id;
         setSelectedLevel(newLevel);
-
-        // Pass the fresh newLevel value, not the stale selectedLevel state
         sendFiltersToBackend(selectedWorkType, newLevel, selectedLocationName, onFilter);
     }
 
-
-    // ─────────────────────────────────────────
-    // HANDLER: handleLocationClick
-    //
-    // Called when the user clicks a city pill.
-    // Clicking the already-selected city deselects it.
-    // Clicking a different city selects it.
-    // Then sends all current filters to PHP.
-    // ─────────────────────────────────────────
-
     function handleLocationClick(locationName) {
-        let newLocationName;
-
-        if (selectedLocationName === locationName) {
-            newLocationName = null; // clicking the same city deselects it
-        } else {
-            newLocationName = locationName;
-        }
-
+        const newLocationName = selectedLocationName === locationName ? null : locationName;
         setSelectedLocationName(newLocationName);
-
-        // Pass the fresh newLocationName value, not the stale selectedLocationName state
         sendFiltersToBackend(selectedWorkType, selectedLevel, newLocationName, onFilter);
     }
 
-
-    // ─────────────────────────────────────────
-    // RENDER
-    // ─────────────────────────────────────────
+    // Reset all three filters at once and reload the default job list
+    function handleResetFilters() {
+        setSelectedWorkType(null);
+        setSelectedLevel(null);
+        setSelectedLocationName(null);
+        onFilter(null); // null tells JobList to show its default view
+    }
 
     return (
-        <aside className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <aside className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden self-start sticky top-4">
 
             {/* ── Sidebar header bar ── */}
-            <div className="bg-purple-600 px-4 py-3">
+            <div className="bg-purple-600 px-4 py-3 flex items-center justify-between">
                 <h3 className="font-bold text-sm text-white flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <line x1="4" y1="6" x2="20" y2="6" />
@@ -277,6 +184,15 @@ const Sidebar = ({ onFilter }) => {
                     </svg>
                     Bộ lọc tìm kiếm
                 </h3>
+                {/* Reset button — only visible when at least one filter is active */}
+                {activeCount > 0 && (
+                    <button
+                        onClick={handleResetFilters}
+                        className="text-xs text-white/80 hover:text-white underline transition-colors"
+                    >
+                        Xóa ({activeCount})
+                    </button>
+                )}
             </div>
 
             <div className="p-4 flex flex-col gap-5">
@@ -288,13 +204,11 @@ const Sidebar = ({ onFilter }) => {
                     </h4>
                     <ul className="flex flex-col gap-1">
                         {workTypes.map(function (item) {
-                            const isSelected = selectedWorkType === item.id;
-
                             return (
                                 <li key={item.id}>
                                     <FilterButton
                                         label={item.label}
-                                        isSelected={isSelected}
+                                        isSelected={selectedWorkType === item.id}
                                         onClick={function () { handleWorkTypeClick(item.id); }}
                                     />
                                 </li>
@@ -312,13 +226,11 @@ const Sidebar = ({ onFilter }) => {
                     </h4>
                     <ul className="flex flex-col gap-1">
                         {levels.map(function (item) {
-                            const isSelected = selectedLevel === item.id;
-
                             return (
                                 <li key={item.id}>
                                     <FilterButton
                                         label={item.label}
-                                        isSelected={isSelected}
+                                        isSelected={selectedLevel === item.id}
                                         onClick={function () { handleLevelClick(item.id); }}
                                     />
                                 </li>
@@ -336,13 +248,11 @@ const Sidebar = ({ onFilter }) => {
                     </h4>
                     <div className="flex flex-wrap gap-2">
                         {locations.map(function (locationName) {
-                            const isSelected = selectedLocationName === locationName;
-
                             return (
                                 <button
                                     key={locationName}
                                     onClick={function () { handleLocationClick(locationName); }}
-                                    className={getLocationPillClasses(isSelected)}
+                                    className={getLocationPillClasses(selectedLocationName === locationName)}
                                 >
                                     {locationName}
                                 </button>
