@@ -196,109 +196,134 @@ const MOCK_TALENT_POOL = [
     },
 ];
 
-//Dropdown options
 const CATEGORIES = ["Công nghệ thông tin", "Marketing / PR", "Thiết kế", "Kế toán / Kiểm toán", "Kinh doanh / Bán hàng", "Nhân sự", "Dịch vụ khách hàng"];
 const JOB_TYPES = ["Full-time", "Part-time", "Freelancer", "Thực tập"];
 const LOCATIONS = ["Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ"];
 const EXPERIENCES = ["Không yêu cầu", "Dưới 1 năm", "1-2 năm", "2-3 năm", "3-5 năm", "Trên 5 năm"];
 const COMPANY_SIZES = ["1-10 nhân viên", "10-50 nhân viên", "50-100 nhân viên", "100-500 nhân viên", "Trên 500 nhân viên"];
 
-//  Candidate status config
-// Maps a candidate status string to its display label and badge colors.
 const STATUS_CONFIG = {
-    new: { label: "Mới", bg: "#eff6ff", color: "#1d4ed8" },
-    reviewing: { label: "Đang xem xét", bg: "#fefce8", color: "#854d0e" },
-    shortlisted: { label: "Tiềm năng", bg: "#f0fdf4", color: "#15803d" },
-    rejected: { label: "Từ chối", bg: "#fff1f2", color: "#be123c" },
+    new: {
+        label: "Mới",
+        bg: "#eff6ff",
+        color: "#1d4ed8"
+    },
+    reviewing: {
+        label: "Đang xem xét",
+        bg: "#fefce8",
+        color: "#854d0e"
+    },
+    shortlisted: {
+        label: "Tiềm năng",
+        bg: "#f0fdf4",
+        color: "#15803d"
+    },
+    rejected: {
+        label: "Từ chối",
+        bg: "#fff1f2",
+        color: "#be123c"
+    },
 };
 
-//  Shared inline styles 
-// Base style for all text inputs and selects
 const inputStyle = {
-    width: "100%", padding: "9px 12px", borderRadius: 8,
-    border: "1px solid #e5e7eb", fontSize: 13, outline: "none",
-    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+    width: "100%",
+    padding: "9px 12px",
+    borderRadius: 8,
+    border: "1px solid #e5e7eb",
+    fontSize: 13,
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    color: "#111827",
 };
 
-// Same as inputStyle but with resize for textareas
 const textareaStyle = {
-    width: "100%", padding: "9px 12px", borderRadius: 8,
-    border: "1px solid #e5e7eb", fontSize: 13, outline: "none",
-    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+    width: "100%",
+    padding: "9px 12px",
+    borderRadius: 8,
+    border: "1px solid #e5e7eb",
+    fontSize: 13,
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    color: "#111827",
     resize: "vertical",
 };
 
-// Same as inputStyle but width:auto for inline selects (filter dropdowns)
 const autoSelectStyle = {
-    width: "auto", padding: "9px 12px", borderRadius: 8,
-    border: "1px solid #e5e7eb", fontSize: 13, outline: "none",
-    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+    width: "auto",
+    padding: "9px 12px",
+    borderRadius: 8,
+    border: "1px solid #e5e7eb",
+    fontSize: 13,
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    color: "#111827",
 };
 
-// Smaller version of autoSelectStyle used for the status dropdown inside candidate rows
 const smallSelectStyle = {
-    width: "auto", padding: "6px 10px", borderRadius: 8,
-    border: "1px solid #e5e7eb", fontSize: 12, outline: "none",
-    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+    width: "auto",
+    padding: "6px 10px",
+    borderRadius: 8,
+    border: "1px solid #e5e7eb",
+    fontSize: 12,
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    color: "#111827",
 };
 
-//  Helpers
-
-// Returns the first letter of the last two words of a name, uppercased.
-// Example: "Nguyễn Thị Bình" → "TB"
-function getInitials(name) {
+const getInitials = (name) => {
     const words = name.split(" ");
     const lastTwo = words.slice(-2);
-    const letters = lastTwo.map(function (word) { return word[0]; });
+    const letters = lastTwo.map((word) => {
+        return word[0];
+    });
     return letters.join("").toUpperCase();
 }
 
-// Returns how many days remain until the given date string (minimum 0).
-function getDaysLeft(dateString) {
+const getDaysLeft = (dateString) => {
     const deadline = new Date(dateString);
     const now = new Date();
     const diff = deadline - now;
-    const days = Math.ceil(diff / 86400000); // 86400000 ms = 1 day
+    const days = Math.ceil(diff / 86400000);
     if (days < 0) {
         return 0;
     }
     return days;
 }
 
-// Formats a date string into Vietnamese locale format (DD/MM/YYYY).
-function formatDate(dateString) {
+const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("vi-VN");
 }
 
-// Picks a consistent avatar color based on the first character of a name.
 const AVATAR_COLORS = ["#7c3aed", "#0369a1", "#0f766e", "#b45309", "#be185d", "#6d28d9"];
 
-function getAvatarColor(name) {
+const getAvatarColor = (name) => {
     const index = name.charCodeAt(0) % AVATAR_COLORS.length;
     return AVATAR_COLORS[index];
 }
 
-// Returns a styled <h3> section heading element.
-function getSectionTitle(text) {
+const getSectionTitle = (text) => {
     return (
-        <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: 0.5, paddingBottom: 8, borderBottom: "1px solid #f3f4f6" }}>
-            {text}
-        </h3>
+        <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: 0.5, paddingBottom: 8, borderBottom: "1px solid #f3f4f6" }}>{text}</h3>
     );
 }
 
-// Returns a styled <label> element used above form inputs.
-function getFieldLabel(text) {
+const getFieldLabel = (text) => {
     return (
-        <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>
-            {text}
-        </label>
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>{text}</label>
     );
 }
 
-// Returns the inline style object for a job status badge pill.
-function getJobStatusStyle(status) {
-    const base = { fontSize: 11, padding: "3px 8px", borderRadius: 20, fontWeight: 600 };
+const getJobStatusStyle = (status) => {
+    const base = {
+        fontSize: 11,
+        padding: "3px 8px",
+        borderRadius: 20,
+        fontWeight: 600
+    };
 
     if (status === "active") {
         base.background = "#f0fdf4";
@@ -311,28 +336,34 @@ function getJobStatusStyle(status) {
     return base;
 }
 
-// Returns the display label for a job status string.
-function getJobStatusLabel(status) {
+const getJobStatusLabel = (status) => {
     if (status === "active") {
         return "Đang tuyển";
     }
     return "Đã đóng";
 }
 
-// Returns the label for the open/close toggle button on a job card.
-function getToggleButtonLabel(status) {
+const getToggleButtonLabel = (status) => {
     if (status === "active") {
         return "Đóng tin";
     }
     return "Mở lại";
 }
 
-// Returns the inline style for a sidebar navigation button.
-function getSidebarTabStyle(isActive) {
+const getSidebarTabStyle = (isActive) => {
     const style = {
-        width: "100%", display: "flex", alignItems: "center", gap: 10,
-        padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-        textAlign: "left", fontSize: 13.5, marginBottom: 3, transition: "all 0.15s",
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 12px",
+        borderRadius: 8,
+        border: "none",
+        cursor: "pointer",
+        textAlign: "left",
+        fontSize: 13.5,
+        marginBottom: 3,
+        transition: "all 0.15s",
     };
 
     if (isActive) {
@@ -348,9 +379,13 @@ function getSidebarTabStyle(isActive) {
     return style;
 }
 
-// Returns the inline style for the filter pill buttons (e.g. "Tất cả / Đang tuyển / Đã đóng").
-function getFilterButtonStyle(isActive) {
-    const style = { padding: "7px 16px", borderRadius: 20, fontSize: 13, cursor: "pointer" };
+const getFilterButtonStyle = (isActive) => {
+    const style = {
+        padding: "7px 16px",
+        borderRadius: 20,
+        fontSize: 13,
+        cursor: "pointer"
+    };
 
     if (isActive) {
         style.border = "1px solid #7c3aed";
@@ -367,12 +402,19 @@ function getFilterButtonStyle(isActive) {
     return style;
 }
 
-// Returns the inline style for the primary save/submit button inside a modal.
-function getSubmitButtonStyle(isLoading) {
+const getSubmitButtonStyle = (isLoading) => {
     const style = {
-        flex: 1, padding: "11px", borderRadius: 10, border: "none",
-        color: "#fff", fontSize: 14, fontWeight: 600,
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        flex: 1,
+        padding: "11px",
+        borderRadius: 10,
+        border: "none",
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: 600,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
     };
 
     if (isLoading) {
@@ -386,11 +428,16 @@ function getSubmitButtonStyle(isLoading) {
     return style;
 }
 
-// Returns the inline style for the user menu button at the bottom of the sidebar.
-function getMenuToggleButtonStyle(isOpen) {
+const getMenuToggleButtonStyle = (isOpen) => {
     const style = {
-        width: "100%", display: "flex", alignItems: "center", gap: 10,
-        padding: "8px 10px", borderRadius: 8, cursor: "pointer", transition: "all 0.15s",
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 10px",
+        borderRadius: 8,
+        cursor: "pointer",
+        transition: "all 0.15s",
     };
 
     if (isOpen) {
@@ -404,9 +451,13 @@ function getMenuToggleButtonStyle(isOpen) {
     return style;
 }
 
-// Returns the style for the small triangle arrow on the user menu button.
-function getChevronStyle(isOpen) {
-    const style = { fontSize: 10, color: "#9ca3af", transition: "transform 0.2s", flexShrink: 0 };
+const getChevronStyle = (isOpen) => {
+    const style = {
+        fontSize: 10,
+        color: "#9ca3af",
+        transition: "transform 0.2s",
+        flexShrink: 0
+    };
 
     if (isOpen) {
         style.transform = "rotate(180deg)";
@@ -417,27 +468,26 @@ function getChevronStyle(isOpen) {
     return style;
 }
 
-//  Shared components
-
-// A small colored pill showing a candidate's current status.
-function Badge({ status }) {
+const Badge = ({ status }) => {
     let config = STATUS_CONFIG[status];
 
-    // Fall back to "new" style if the status string is unrecognised
     if (!config) {
         config = STATUS_CONFIG.new;
     }
 
     const style = {
-        fontSize: 11, padding: "3px 10px", borderRadius: 20,
-        background: config.bg, color: config.color, fontWeight: 600,
+        fontSize: 11,
+        padding: "3px 10px",
+        borderRadius: 20,
+        background: config.bg,
+        color: config.color,
+        fontWeight: 600,
     };
 
     return <span style={style}>{config.label}</span>;
 }
 
-// Shown in the center of a tab when there is no data to display.
-function EmptyState({ icon, title, sub }) {
+const EmptyState = ({ icon, title, sub }) => {
     return (
         <div style={{ textAlign: "center", padding: "80px 0", color: "#9ca3af" }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>{icon}</div>
@@ -447,56 +497,57 @@ function EmptyState({ icon, title, sub }) {
     );
 }
 
-// A small CSS-animated spinning circle shown inside buttons while saving.
-function SpinnerDot() {
+const SpinnerDot = () => {
     return (
-        <span style={{
-            display: "inline-block", width: 14, height: 14,
-            border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff",
-            borderRadius: "50%", animation: "spin 0.7s linear infinite",
-        }} />
+        <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", }} />
     );
 }
 
-
-//  Sidebar
-// The left navigation panel. Shows the app logo, nav tabs, and a user menu.
-//
-// Props:
-//   activeTab    - id string of the currently shown tab
-//   setActiveTab - function to switch to a different tab
-//   onLogout     - function called when the user clicks "Đăng xuất"
-
-function Sidebar({ activeTab, setActiveTab, onLogout }) {
+const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const [menuOpen, setMenuOpen] = useState(false);
-
-    // menuRef is attached to the wrapper div so we can detect
-    // clicks outside the menu and close it automatically.
     const menuRef = useRef();
 
-    // Close the dropdown menu when the user clicks anywhere outside it
-    useEffect(function () {
-        function handleClickOutside(event) {
+    useEffect(() => {
+        const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setMenuOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
-        return function () {
+        return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
 
     const tabs = [
-        { id: "overview", icon: "📊", label: "Tổng quan" },
-        { id: "jobs", icon: "📋", label: "Quản lý tin đăng" },
-        { id: "candidates", icon: "👥", label: "Quản lý ứng viên" },
-        { id: "talent", icon: "🔍", label: "Tìm ứng viên" },
-        { id: "company", icon: "🏢", label: "Thông tin công ty" },
+        {
+            id: "overview",
+            icon: "📊",
+            label: "Tổng quan"
+        },
+        {
+            id: "jobs",
+            icon: "📋",
+            label: "Quản lý tin đăng"
+        },
+        {
+            id: "candidates",
+            icon: "👥",
+            label: "Quản lý ứng viên"
+        },
+        {
+            id: "talent",
+            icon: "🔍",
+            label: "Tìm ứng viên"
+        },
+        {
+            id: "company",
+            icon: "🏢",
+            label: "Thông tin công ty"
+        },
     ];
 
-    // Bật/tắt dropdown menu người dùng
-    function handleMenuToggle() {
+    const handleMenuToggle = () => {
         if (menuOpen) {
             setMenuOpen(false);
         } else {
@@ -504,22 +555,18 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
         }
     }
 
-    // Đi đến tab thông tin công ty từ menu người dùng
-    function handleGoToCompany() {
+    const handleGoToCompany = () => {
         setActiveTab("company");
         setMenuOpen(false);
     }
 
-    // Đăng xuất từ menu người dùng
-    function handleLogout() {
+    const handleLogout = () => {
         setMenuOpen(false);
         onLogout();
     }
 
     return (
         <aside style={{ width: 224, flexShrink: 0, background: "#fff", borderRight: "1px solid #e5e7eb", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-
-            {/* Logo + subtitle */}
             <div style={{ padding: "20px 20px 12px", borderBottom: "1px solid #f3f4f6" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <img src={Logo} alt="JobHot Logo" style={{ height: 32, width: "auto" }} />
@@ -528,16 +575,11 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
                 <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Trang nhà tuyển dụng</div>
             </div>
 
-            {/* Navigation tabs */}
             <nav style={{ flex: 1, padding: "12px 12px" }}>
-                {tabs.map(function (tab) {
+                {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     return (
-                        <button
-                            key={tab.id}
-                            onClick={function () { setActiveTab(tab.id); }}
-                            style={getSidebarTabStyle(isActive)}
-                        >
+                        <button key={tab.id} onClick={() => { setActiveTab(tab.id); }} style={getSidebarTabStyle(isActive)}>
                             <span style={{ fontSize: 15 }}>{tab.icon}</span>
                             {tab.label}
                         </button>
@@ -545,53 +587,32 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
                 })}
             </nav>
 
-            {/* User menu at the bottom of the sidebar */}
             <div style={{ padding: "12px 12px", borderTop: "1px solid #f3f4f6", position: "relative" }} ref={menuRef}>
 
-                {/* Menu toggle button */}
                 <button onClick={handleMenuToggle} style={getMenuToggleButtonStyle(menuOpen)}>
-                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-                        CT
-                    </div>
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>CT</div>
                     <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            Công ty JobHot
-                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Công ty JobHot</div>
                         <div style={{ fontSize: 11, color: "#9ca3af" }}>Nhà tuyển dụng</div>
                     </div>
                     <span style={getChevronStyle(menuOpen)}>▲</span>
                 </button>
 
-                {/* Dropdown menu — only rendered when menuOpen is true */}
                 {menuOpen && (
                     <div style={{ position: "absolute", bottom: "calc(100% - 8px)", left: 12, right: 12, background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", overflow: "hidden", zIndex: 50 }}>
-
-                        {/* Account info row */}
                         <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #f3f4f6" }}>
                             <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>Công ty JobHot</div>
                             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>hr@jobhot.vn</div>
                         </div>
 
-                        {/* Menu action buttons */}
                         <div style={{ padding: "6px" }}>
-                            <button
-                                onClick={handleGoToCompany}
-                                style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: "#374151", textAlign: "left" }}
-                                onMouseEnter={function (e) { e.currentTarget.style.background = "#f5f3ff"; }}
-                                onMouseLeave={function (e) { e.currentTarget.style.background = "transparent"; }}
-                            >
+                            <button onClick={handleGoToCompany} style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: "#374151", textAlign: "left" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f5f3ff"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                                 <span>🏢</span> Thông tin công ty
                             </button>
-                            <button
-                                onClick={handleLogout}
-                                style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: "#ef4444", textAlign: "left" }}
-                                onMouseEnter={function (e) { e.currentTarget.style.background = "#fff1f2"; }}
-                                onMouseLeave={function (e) { e.currentTarget.style.background = "transparent"; }}
-                            >
+                            <button onClick={handleLogout} style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: "#ef4444", textAlign: "left" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#fff1f2"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                                 <span>🚪</span> Đăng xuất
                             </button>
                         </div>
-
                     </div>
                 )}
             </div>
@@ -599,36 +620,57 @@ function Sidebar({ activeTab, setActiveTab, onLogout }) {
     );
 }
 
-//  OverviewTab 
-// The dashboard home screen. Shows four stat cards and two recent-items panels.
-//
-// Props:
-//   jobs         - full jobs array from root state
-//   candidates   - full candidates array from root state
-//   setActiveTab - lets the "Xem tất cả" buttons jump to another tab
+const OverviewTab = ({ jobs, candidates, setActiveTab }) => {
 
-function OverviewTab({ jobs, candidates, setActiveTab }) {
+    const activeJobCount = jobs.filter((j) => {
+        return j.status === "active";
+    }).length;
 
-    // Calculate summary numbers for the four stat cards
-    const activeJobCount = jobs.filter(function (j) { return j.status === "active"; }).length;
     const totalCandidates = candidates.length;
-    const newCandidates = candidates.filter(function (c) { return c.status === "new"; }).length;
-    const shortlistedCount = candidates.filter(function (c) { return c.status === "shortlisted"; }).length;
+    const newCandidates = candidates.filter((c) => {
+        return c.status === "new";
+    }).length;
+
+    const shortlistedCount = candidates.filter((c) => {
+        return c.status === "shortlisted";
+    }).length;
 
     const stats = [
-        { label: "Tin đang tuyển", value: activeJobCount, icon: "📋", color: "#7c3aed", bg: "#f5f3ff" },
-        { label: "Tổng ứng viên", value: totalCandidates, icon: "👥", color: "#0369a1", bg: "#eff6ff" },
-        { label: "Ứng viên mới", value: newCandidates, icon: "🆕", color: "#b45309", bg: "#fefce8" },
-        { label: "Tiềm năng", value: shortlistedCount, icon: "⭐", color: "#15803d", bg: "#f0fdf4" },
+        {
+            label: "Tin đang tuyển",
+            value: activeJobCount,
+            icon: "📋",
+            color: "#7c3aed",
+            bg: "#f5f3ff"
+        },
+        {
+            label: "Tổng ứng viên",
+            value: totalCandidates,
+            icon: "👥",
+            color: "#0369a1",
+            bg: "#eff6ff"
+        },
+        {
+            label: "Ứng viên mới",
+            value: newCandidates,
+            icon: "🆕",
+            color: "#b45309",
+            bg: "#fefce8"
+        },
+        {
+            label: "Tiềm năng",
+            value: shortlistedCount,
+            icon: "⭐",
+            color: "#15803d",
+            bg: "#f0fdf4"
+        },
     ];
 
-    // Lấy 3 tin gần nhất để hiển thị
     const recentJobs = [];
     for (let i = 0; i < 3 && i < jobs.length; i++) {
         recentJobs.push(jobs[i]);
     }
 
-    // Lấy 4 ứng viên gần nhất để hiển thị
     const recentCandidates = [];
     for (let i = 0; i < 4 && i < candidates.length; i++) {
         recentCandidates.push(candidates[i]);
@@ -638,10 +680,8 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
         <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Tổng quan</h2>
             <p style={{ margin: "0 0 24px", fontSize: 13, color: "#6b7280" }}>Chào mừng trở lại! Đây là tình hình tuyển dụng hôm nay.</p>
-
-            {/* Four stat cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
-                {stats.map(function (stat) {
+                {stats.map((stat) => {
                     return (
                         <div key={stat.label} style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "18px 20px" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -658,18 +698,15 @@ function OverviewTab({ jobs, candidates, setActiveTab }) {
                 })}
             </div>
 
-            {/* Two recent-items panels side by side */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
-                {/* Recent jobs panel */}
                 <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "20px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>Tin tuyển dụng gần đây</h3>
-                        <button onClick={function () { setActiveTab("jobs"); }} style={{ fontSize: 12, color: "#7c3aed", border: "none", background: "none", cursor: "pointer", fontWeight: 500 }}>
+                        <button onClick={() => { setActiveTab("jobs"); }} style={{ fontSize: 12, color: "#7c3aed", border: "none", background: "none", cursor: "pointer", fontWeight: 500 }}>
                             Xem tất cả →
                         </button>
                     </div>
-                    {recentJobs.map(function (job) {
+                    {recentJobs.map((job) => {
                         return (
                             <div key={job.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f9fafb" }}>
                                 <div>

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import PublicRoute from './PublicRoute';
 import PrivateRoute from './PrivateRoute';
+import LandingPage from '../pages/Landing';
 import HomePage from '../pages/Home';
 import LoginPage from '../pages/Login';
 import RegisterPage from '../pages/Register';
@@ -14,8 +15,17 @@ import AboutPage from '../pages/About';
 const AppRoutes = () => (
     <BrowserRouter>
         <Routes>
-            {/* Public / landing pages */}
-            <Route path="/" element={<PublicRoute><HomePage /></PublicRoute>} />
+            {/* Landing page — shown to guests; logged-in users go to their dashboard */}
+            <Route path="/" element={<PublicRoute landingMode><LandingPage /></PublicRoute>} />
+
+            {/* Job browsing (requires login — job seekers only) */}
+            <Route path="/jobs" element={
+                <PrivateRoute allowedRoles={['user']}>
+                    <HomePage />
+                </PrivateRoute>
+            } />
+
+            {/* Public pages */}
             <Route path="/jobs/:id" element={<PublicRoute><JobDetailPage /></PublicRoute>} />
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
@@ -39,6 +49,7 @@ const AppRoutes = () => (
 
             {/* Aliases */}
             <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+            <Route path="/home" element={<Navigate to="/jobs" replace />} />
 
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />

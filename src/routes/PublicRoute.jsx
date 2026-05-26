@@ -1,31 +1,35 @@
 import { Navigate, useLocation } from 'react-router-dom';
 
 // PublicRoute
-// - If rememberMe flag is set AND a token exists, auto-redirect the user
-//   to their dashboard when they hit login/register pages.
-// - All other public pages (home, jobs, contact, about) remain accessible.
+// - landingMode: nếu true, khi đã đăng nhập + rememberMe sẽ redirect thẳng đến dashboard
+//   (dùng cho route "/" — landing page)
+// - Các trang auth (login/register/forgot-password): luôn redirect nếu đã đăng nhập
+// - Các trang public khác (about, contact, job detail): ai cũng vào được
 
-const PublicRoute = ({ children }) => {
+const PublicRoute = ({ children, landingMode = false }) => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const rememberMe = localStorage.getItem('rememberMe');
     const location = useLocation();
 
     const authOnlyPaths = ['/login', '/register', '/forgot-password'];
+    const isAuthPage = authOnlyPaths.includes(location.pathname);
 
-    // If logged in with remember-me and visiting an auth-only page, skip to dashboard
-    if (token && rememberMe === 'true' && authOnlyPaths.includes(location.pathname)) {
+    // Helper: redirect to correct dashboard
+    const redirectByRole = () => {
         if (role === 'admin') return <Navigate to="/admin" replace />;
         if (role === 'employer') return <Navigate to="/employer" replace />;
-        return <Navigate to="/" replace />;
+        return <Navigate to="/jobs" replace />;
+    };
+
+    // Landing page: if logged in with rememberMe → go to dashboard directly
+    if (landingMode && token && rememberMe === 'true') {
+        return redirectByRole();
     }
 
-    // If logged in without remember-me, still redirect away from auth pages
-    // (token exists from this session) to avoid confusion
-    if (token && authOnlyPaths.includes(location.pathname)) {
-        if (role === 'admin') return <Navigate to="/admin" replace />;
-        if (role === 'employer') return <Navigate to="/employer" replace />;
-        return <Navigate to="/" replace />;
+    // Auth pages: redirect away if already logged in
+    if (isAuthPage && token) {
+        return redirectByRole();
     }
 
     return children;

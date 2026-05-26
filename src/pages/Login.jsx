@@ -104,6 +104,8 @@ const LoginPage = () => {
             const role = userData.role;
             const name = userData.name;
             const industry = userData.industry;
+            const company = userData.company;
+            const avatar = userData.avatar;
 
             // Save to localStorage
             localStorage.setItem('token', token);
@@ -111,6 +113,8 @@ const LoginPage = () => {
             localStorage.setItem('name', name);
             localStorage.setItem('email', email);
             if (industry) localStorage.setItem('industry', industry);
+            if (company) localStorage.setItem('company', company);
+            if (avatar) localStorage.setItem('avatar', avatar);
 
             // Handle Remember Me — store flag so auto-login can be applied
             if (rememberMe) {
@@ -125,8 +129,8 @@ const LoginPage = () => {
             } else if (role === 'employer') {
                 navigate('/employer');
             } else {
-                // job_seeker → home page (job browsing)
-                navigate('/');
+                // job_seeker → job browsing page
+                navigate('/jobs');
             }
 
         } catch (err) {
