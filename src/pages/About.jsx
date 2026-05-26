@@ -64,12 +64,12 @@ const AboutPage = () => {
         {
             name: 'Đoàn Hà Anh',
             role: 'Founder',
-            moji: '👩'
+            emoji: '👩'
         },
         {
             name: 'Nguyễn Ngọc Sơn',
             role: 'Member',
-            moji: '👨‍💼'
+            emoji: '👨‍💼'
         },
     ];
 
@@ -122,13 +122,23 @@ const AboutPage = () => {
 
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Đội ngũ lãnh đạo</h2>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <div className="flex flex-wrap justify-center gap-4 mb-10">
                     {team.map((m) => {
                         return (
-                            <div key={m.name} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
-                                <div className="text-4xl mb-2">{m.emoji}</div>
-                                <p className="font-semibold text-sm text-gray-800">{m.name}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{m.role}</p>
+                            <div
+                                key={m.name}
+                                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center
+                                           w-[calc(50%-8px)] sm:w-40 flex flex-col items-center
+                                           hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                            >
+                                <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center text-3xl mb-3 ring-2 ring-purple-100">
+                                    {m.emoji}
+                                </div>
+                                <p className="font-semibold text-sm text-gray-800 leading-tight">{m.name}</p>
+                                <span className="mt-1.5 inline-block text-xs font-medium px-2.5 py-0.5 rounded-full
+                                                 bg-purple-100 text-purple-700">
+                                    {m.role}
+                                </span>
                             </div>
                         );
                     })}

@@ -10,6 +10,8 @@ const CATEGORIES = [
     'Dịch vụ khách hàng',
 ];
 
+const API = 'http://localhost/aptech-project-main/server/index.php';
+
 const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
     const [profile, setProfile] = useState({
         name: userName || 'Người dùng',
@@ -27,24 +29,98 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
     });
     const [cvFile, setCvFile] = useState(null);
     const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
     const fileRef = useRef();
 
     const setField = (key, value) => {
         setProfile(prev => ({ ...prev, [key]: value }));
     };
 
+    /** Convert a File to base64 string */
+    const fileToBase64 = (file) =>
+        new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result); // data:<mime>;base64,<data>
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
     const handleSave = async (e) => {
         e.preventDefault();
+        setError('');
+        setSaving(true);
 
-        // TODO: Gửi dữ liệu lên server
-        // const formData = new FormData();
-        // formData.append('name', profile.name);
-        // ... thêm các field khác
+        try {
+            const token = localStorage.getItem('token');
 
-        // Hiển thị thông báo thành công
-        setSaved(true);
-        setCvFile(null);
-        setTimeout(() => setSaved(false), 2500);
+            // Build the JSON payload
+            const payload = {
+                name: profile.name,
+                phone: profile.phone,
+                dob: profile.dob,
+                gender: profile.gender,
+                address: profile.address,
+                email: profile.email,
+                position: profile.position,
+                experience: profile.experience,
+                skills: profile.skills,
+                industry: profile.industry,
+                jobType: profile.jobType,
+                bio: profile.bio,
+            };
+
+            // Attach CV as base64 if the user selected one
+            if (cvFile) {
+                const MAX_CV_SIZE = 5 * 1024 * 1024; // 5 MB
+                if (cvFile.size > MAX_CV_SIZE) {
+                    setError('File CV không được vượt quá 5 MB.');
+                    setSaving(false);
+                    return;
+                }
+                payload.cv = await fileToBase64(cvFile);
+                payload.cvName = cvFile.name;
+            }
+
+            const response = await fetch(`${API}?action=update-profile`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                setError(data.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
+                setSaving(false);
+                return;
+            }
+
+            // Sync updated values back to localStorage so Header refreshes
+            if (data.data?.name) localStorage.setItem('name', data.data.name);
+            if (data.data?.email) localStorage.setItem('email', data.data.email);
+            if (data.data?.avatar !== undefined) {
+                if (data.data.avatar) localStorage.setItem('avatar', data.data.avatar);
+                else localStorage.removeItem('avatar');
+            }
+
+            setSaved(true);
+            setCvFile(null);
+            setTimeout(() => {
+                setSaved(false);
+                onClose();
+                // Reload so Header picks up new name/email from localStorage
+                window.location.reload();
+            }, 1500);
+        } catch (err) {
+            console.error('Update profile error:', err);
+            setError('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleClickUpload = () => {
@@ -54,7 +130,7 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
     };
 
     const handleFileChange = (e) => {
-        setCvFile(e.target.files[0]);
+        setCvFile(e.target.files[0] || null);
     };
 
     const handleBackdropClick = (e) => {
@@ -93,6 +169,13 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
                         </div>
                     </div>
 
+                    {/* Error banner */}
+                    {error && (
+                        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center gap-2">
+                            <span>⚠️</span> {error}
+                        </div>
+                    )}
+
                     <form onSubmit={handleSave} className="flex flex-col gap-5">
 
                         <div>
@@ -100,7 +183,7 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Họ và tên</label>
-                                    <input type="text" value={profile.name} onChange={e => setField('name', e.target.value)} className={inputStyle} />
+                                    <input type="text" value={profile.name} onChange={e => setField('name', e.target.value)} className={inputStyle} required />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
@@ -170,7 +253,7 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">
                                 Kỹ năng
-                                <span className="text-gray-400 font-normal">(phân cách bằng dấu phẩy)</span>
+                                <span className="text-gray-400 font-normal"> (phân cách bằng dấu phẩy)</span>
                             </label>
                             <input value={profile.skills} onChange={e => setField('skills', e.target.value)} placeholder="React, Node.js, Python..." className={inputStyle} />
                             <div className="flex flex-wrap gap-2 mt-2">
@@ -189,7 +272,11 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
                             <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wide mb-4 pb-2 border-b border-gray-100">Upload CV</h3>
                             <div onClick={handleClickUpload} className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-purple-500 transition-colors">
                                 {cvFile ? (
-                                    <div className="text-purple-600 font-medium text-sm">📄 {cvFile.name}</div>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="text-2xl">📄</div>
+                                        <div className="text-purple-600 font-medium text-sm">{cvFile.name}</div>
+                                        <div className="text-xs text-gray-400">{(cvFile.size / 1024).toFixed(0)} KB — nhấn để đổi file</div>
+                                    </div>
                                 ) : (
                                     <>
                                         <div className="text-4xl mb-2">📤</div>
@@ -202,8 +289,22 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
                         </div>
 
                         <div className="flex gap-3 pt-2">
-                            <button type="button" onClick={onClose} className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">Hủy</button>
-                            <button type="submit" className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2">{saved ? '✓ Đã lưu!' : 'Lưu thay đổi'}</button>
+                            <button type="button" onClick={onClose} disabled={saving} className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50">Hủy</button>
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {saving ? (
+                                    <>
+                                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                        </svg>
+                                        Đang lưu...
+                                    </>
+                                ) : saved ? '✓ Đã lưu!' : 'Lưu thay đổi'}
+                            </button>
                         </div>
                     </form>
                 </div>

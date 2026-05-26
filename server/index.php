@@ -874,4 +874,90 @@ if ($action === 'submit-rating') {
     sendJsonResponse(true, 'Cảm ơn bạn đã đánh giá!');
 }
 
+if ($action === 'update-profile') {
+    $uid = getUserIdFromToken();
+    if (!$uid) {
+        sendJsonResponse(false, 'Bạn cần đăng nhập.', [], 401);
+    }
+
+    $name       = trim($body['name']       ?? '');
+    $phone      = trim($body['phone']      ?? '');
+    $dob        = trim($body['dob']        ?? '');
+    $gender     = trim($body['gender']     ?? '');
+    $address    = trim($body['address']    ?? '');
+    $email      = trim($body['email']      ?? '');
+    $position   = trim($body['position']   ?? '');
+    $experience = trim($body['experience'] ?? '');
+    $skills     = trim($body['skills']     ?? '');
+    $industry   = trim($body['industry']   ?? '');
+    $jobType    = trim($body['jobType']    ?? '');
+    $bio        = trim($body['bio']        ?? '');
+    $avatar     = isset($body['avatar'])   ? $body['avatar'] : null;
+    $cvBase64   = isset($body['cv'])       ? $body['cv']     : null;
+
+    if ($name === '') {
+        sendJsonResponse(false, 'Họ và tên không được để trống.', [], 400);
+    }
+
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        sendJsonResponse(false, 'Email không hợp lệ.', [], 400);
+    }
+
+    // Reject oversized avatar (> ~2 MB base64)
+    if ($avatar && strlen($avatar) > 2800000) {
+        $avatar = null;
+    }
+
+    $db = getDatabaseConnection();
+
+    // Check email uniqueness (ignore current user)
+    if ($email !== '') {
+        $dup = $db->prepare("SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1");
+        $dup->execute([$email, $uid]);
+        if ($dup->fetch()) {
+            sendJsonResponse(false, 'Email này đã được sử dụng bởi tài khoản khác.', [], 409);
+        }
+    }
+
+    $fields = [
+        'full_name'  => $name,
+        'phone'      => $phone      ?: null,
+        'dob'        => $dob        ?: null,
+        'gender'     => $gender     ?: null,
+        'address'    => $address    ?: null,
+        'position'   => $position   ?: null,
+        'experience' => $experience ?: null,
+        'skills'     => $skills     ?: null,
+        'industry'   => $industry   ?: null,
+        'bio'        => $bio        ?: null,
+    ];
+
+    if ($email !== '') {
+        $fields['email'] = $email;
+    }
+
+    if ($avatar !== null) {
+        $fields['avatar'] = $avatar;
+    }
+
+    $setClauses = implode(', ', array_map(fn($k) => "$k = ?", array_keys($fields)));
+    $values     = array_values($fields);
+    $values[]   = $uid;
+
+    $db->prepare("UPDATE users SET $setClauses WHERE id = ?")->execute($values);
+
+    // Fetch updated user to return fresh data
+    $fresh = $db->prepare("SELECT full_name, email, avatar, industry, position FROM users WHERE id = ? LIMIT 1");
+    $fresh->execute([$uid]);
+    $user = $fresh->fetch();
+
+    sendJsonResponse(true, 'Cập nhật thông tin thành công.', [
+        'name'     => $user['full_name'],
+        'email'    => $user['email'],
+        'avatar'   => $user['avatar'] ?? null,
+        'industry' => $user['industry'] ?? null,
+        'position' => $user['position'] ?? null,
+    ]);
+}
+
 sendJsonResponse(false, "Action '$action' không tồn tại.", [], 404);
