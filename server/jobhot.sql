@@ -273,17 +273,117 @@ VALUES
     (3, 'Còn một số lỗi nhỏ nhưng nhìn chung tốt', '203.162.0.4', '2026-05-04 18:50:00');
 
 
--- ============================================================
--- SUMMARY
--- ============================================================
--- Total Records: 50
---   - Users: 15 (1 admin, 7 job seekers, 4 employers, 3 test)
---   - Categories: 11
---   - Jobs: 10
---   - Applications: 6
---   - Saved Jobs: 4
---   - Site Ratings: 4
---
--- All relationships properly configured with foreign keys
--- Ready to use with React components
--- ============================================================
+-- ════════════════════════════════════════════════════════════
+-- 7. DEFAULT_CATEGORIES (from Dashboard.jsx DEFAULT_CATEGORIES)
+--    English display names used by the admin panel UI.
+--    IDs 12-16 to avoid conflict with existing Vietnamese names.
+-- ════════════════════════════════════════════════════════════
+
+INSERT IGNORE INTO categories (id, name, icon) VALUES
+    (12, 'IT & Software',  '💻'),
+    (13, 'Marketing',      '📣'),
+    (14, 'Finance',        '💰'),
+    (15, 'Healthcare',     '🏥'),
+    (16, 'Government',     '🏛️');
+
+
+-- ════════════════════════════════════════════════════════════
+-- 8. TALENT POOL (from Employer.jsx MOCK_TALENT_POOL)
+--    Candidates that employers can search without a specific
+--    application — stored separately from applications.
+-- ════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS talent_pool (
+    id          VARCHAR(10)  PRIMARY KEY,            -- e.g. 'T001'
+    full_name   VARCHAR(100) NOT NULL,
+    position    VARCHAR(100) NOT NULL,
+    experience  VARCHAR(50)  DEFAULT NULL,
+    skills      TEXT         DEFAULT NULL,           -- comma-separated
+    location    VARCHAR(100) DEFAULT NULL,
+    email       VARCHAR(150) DEFAULT NULL,
+    created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO talent_pool (id, full_name, position, experience, skills, location, email) VALUES
+    ('T001', 'Đinh Quốc Huy',  'Data Engineer',      '3-5 năm', 'Python,Spark,Airflow,SQL',            'Hà Nội',       'huy@email.com'),
+    ('T002', 'Bùi Thị Lan',    'Product Manager',    '2-3 năm', 'Agile,Jira,Figma,SQL',                'Hồ Chí Minh',  'lan@email.com'),
+    ('T003', 'Ngô Văn Minh',   'DevOps Engineer',    '3-5 năm', 'Docker,Kubernetes,AWS,Terraform',     'Hà Nội',       'minh@email.com'),
+    ('T004', 'Trịnh Thị Nga',  'React Developer',    '1-2 năm', 'React,JavaScript,CSS,Redux',          'Đà Nẵng',      'nga@email.com'),
+    ('T005', 'Cao Minh Phát',  'iOS Developer',      '2-3 năm', 'Swift,Xcode,UIKit,CoreData',          'Hồ Chí Minh',  'phat@email.com'),
+    ('T006', 'Lý Thị Quyên',   'Content Marketing',  '1-2 năm', 'Copywriting,SEO,Social Media,Canva', 'Hà Nội',       'quyen@email.com');
+
+
+-- ════════════════════════════════════════════════════════════
+-- 9. EXTENDED JOB DETAILS (from JobDetail.jsx mockJobDetails)
+--    Add columns for benefits, responsibilities, and full
+--    company profile — then back-fill jobs 1-3.
+-- ════════════════════════════════════════════════════════════
+
+ALTER TABLE jobs
+    ADD COLUMN IF NOT EXISTS benefits           TEXT          DEFAULT NULL  AFTER requirements,
+    ADD COLUMN IF NOT EXISTS responsibilities   TEXT          DEFAULT NULL  AFTER benefits,
+    ADD COLUMN IF NOT EXISTS quantity           INT           DEFAULT NULL  AFTER responsibilities,
+    ADD COLUMN IF NOT EXISTS gender             VARCHAR(50)   DEFAULT NULL  AFTER quantity,
+    ADD COLUMN IF NOT EXISTS experience         VARCHAR(50)   DEFAULT NULL  AFTER gender,
+    ADD COLUMN IF NOT EXISTS company_size       VARCHAR(100)  DEFAULT NULL  AFTER experience,
+    ADD COLUMN IF NOT EXISTS company_field      VARCHAR(100)  DEFAULT NULL  AFTER company_size,
+    ADD COLUMN IF NOT EXISTS company_address    VARCHAR(255)  DEFAULT NULL  AFTER company_field,
+    ADD COLUMN IF NOT EXISTS company_description TEXT         DEFAULT NULL  AFTER company_address;
+
+-- Job 1 — Trưởng Phòng Đào Tạo
+UPDATE jobs SET
+    requirements = 'Tốt nghiệp Đại học chuyên ngành Sư phạm, Giáo dục hoặc liên quan\nCó ít nhất 3 năm kinh nghiệm ở vị trí tương đương\nKỹ năng lãnh đạo và quản lý đội nhóm tốt\nKỹ năng giao tiếp và thuyết trình xuất sắc\nThành thạo tin học văn phòng và các công cụ đào tạo trực tuyến\nCó khả năng làm việc độc lập và chịu áp lực cao',
+    benefits = 'Lương cạnh tranh từ 15-20 triệu + thưởng theo hiệu quả\nBảo hiểm đầy đủ theo quy định\nMôi trường làm việc chuyên nghiệp, năng động\nCơ hội thăng tiến rõ ràng\nĐào tạo và phát triển kỹ năng thường xuyên\nTeam building, du lịch hàng năm',
+    responsibilities = 'Xây dựng và triển khai các chương trình đào tạo\nQuản lý và phát triển đội ngũ giảng viên\nĐánh giá hiệu quả đào tạo và cải tiến liên tục\nPhối hợp với các phòng ban khác để đảm bảo chất lượng đào tạo\nBáo cáo định kỳ cho Ban Giám Đốc',
+    quantity = 2,
+    gender = 'Không yêu cầu',
+    experience = '3-5 năm',
+    company_size = '200-500 nhân viên',
+    company_field = 'Giáo dục / Đào tạo',
+    company_address = '123 Đường Láng, Đống Đa, Hà Nội',
+    company_website = 'https://giaoduc-abc.vn',
+    company_description = 'Công ty TNHH Giáo Dục ABC là một trong những tập đoàn giáo dục hàng đầu Việt Nam với hơn 15 năm kinh nghiệm trong lĩnh vực đào tạo và phát triển nguồn nhân lực.'
+WHERE id = 1;
+
+-- Job 2 — Kỹ Sư Xây Dựng Cầu Đường
+UPDATE jobs SET
+    requirements = 'Tốt nghiệp Đại học chuyên ngành Xây dựng Cầu Đường\nCó 2-4 năm kinh nghiệm trong lĩnh vực xây dựng\nThành thạo AutoCAD, Civil 3D\nCó khả năng đọc và hiểu bản vẽ kỹ thuật\nChịu được áp lực công việc cao',
+    benefits = 'Lương từ 12-18 triệu + phụ cấp công trình\nBảo hiểm đầy đủ\nHỗ trợ nhà ở tại công trường\nThưởng theo tiến độ dự án\nCơ hội thăng tiến',
+    responsibilities = 'Giám sát thi công các hạng mục cầu đường\nKiểm tra chất lượng công trình\nLập báo cáo tiến độ\nPhối hợp với các bên liên quan',
+    quantity = 5,
+    gender = 'Nam',
+    experience = '2-4 năm',
+    company_size = '500-1000 nhân viên',
+    company_field = 'Xây dựng / Hạ tầng',
+    company_address = '456 Nguyễn Văn Linh, Quận 7, TP.HCM',
+    company_website = 'https://xaydung-xyz.vn',
+    company_description = 'Công ty Xây Dựng XYZ chuyên thực hiện các dự án hạ tầng giao thông lớn trên toàn quốc.'
+WHERE id = 2;
+
+-- Job 3 — Nhân Viên Kế Toán Tổng Hợp
+UPDATE jobs SET
+    requirements = 'Tốt nghiệp Đại học chuyên ngành Kế toán, Tài chính\nCó 1-2 năm kinh nghiệm kế toán tổng hợp\nThành thạo Excel, phần mềm kế toán\nCẩn thận, tỉ mỉ, trung thực\nCó chứng chỉ kế toán là một lợi thế',
+    benefits = 'Lương 8-12 triệu + thưởng\nBảo hiểm đầy đủ\nLàm việc giờ hành chính\nMôi trường chuyên nghiệp\nĐào tạo nghiệp vụ',
+    responsibilities = 'Hạch toán các nghiệp vụ kế toán\nLập báo cáo tài chính\nKiểm tra chứng từ\nQuyết toán thuế',
+    quantity = 1,
+    gender = 'Không yêu cầu',
+    experience = '1-2 năm',
+    company_size = '50-100 nhân viên',
+    company_field = 'Tài chính / Ngân hàng',
+    company_address = '789 Lê Duẩn, Hải Châu, Đà Nẵng',
+    company_website = 'https://taichinh-def.vn',
+    company_description = 'Công ty Tài Chính DEF cung cấp các dịch vụ tài chính và tư vấn đầu tư chuyên nghiệp.'
+WHERE id = 3;
+
+
+-- ════════════════════════════════════════════════════════════
+-- 10. DASHBOARD MOCK_JOBS (admin job list — JP001-JP004)
+--     These correspond to jobs 7-10 already seeded above,
+--     but we record their original string IDs as reference.
+--     No new rows needed; applicant counts updated below.
+-- ════════════════════════════════════════════════════════════
+
+UPDATE jobs SET applicants = 14 WHERE id = 7;   -- JP001 FPT Software
+UPDATE jobs SET applicants = 7  WHERE id = 8;   -- JP002 Admicro
+UPDATE jobs SET applicants = 22 WHERE id = 9;   -- JP003 MOMO (closed)
+UPDATE jobs SET applicants = 9  WHERE id = 10;  -- JP004 Samsung Vina
