@@ -21,7 +21,6 @@ define('MAIL_FROM', 'noreply@jobhot.vn');
 define('MAIL_FROM_NAME', 'JobHot');
 define('JWT_SECRET', 'JOBHOT_SECRET_KEY_2026_CHANGE_IN_PROD');
 define('ADMIN_EMAIL', 'admin@jobhot.vn');
-define('ADMIN_PASSWORD', 'Admin@123');
 define('ADMIN_NAME', 'Quản trị viên JobHot');
 
 function sendJsonResponse(bool $success, string $message, array $data = [], int $httpStatusCode = 200): void
@@ -64,142 +63,6 @@ function getDatabaseConnection(): PDO
     }
 
     return $connection;
-}
-
-function createTablesAndDefaultAdmin(): void
-{
-    $db = getDatabaseConnection();
-
-    $db->exec("
-		CREATE TABLE IF NOT EXISTS users (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			full_name VARCHAR(100) NOT NULL,
-			email VARCHAR(150) NOT NULL UNIQUE,
-			password VARCHAR(255) NOT NULL,
-			role ENUM('user','employer','admin') NOT NULL DEFAULT 'user',
-			industry VARCHAR(100) DEFAULT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-	");
-
-    $db->exec("
-		CREATE TABLE IF NOT EXISTS otp_tokens (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			email VARCHAR(150) NOT NULL,
-			otp VARCHAR(6) NOT NULL,
-			expires_at DATETIME NOT NULL,
-			used TINYINT(1) DEFAULT 0,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-	");
-
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS jobs (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            employer_id INT DEFAULT NULL,
-            title VARCHAR(200) NOT NULL,
-            company VARCHAR(200) NOT NULL,
-            logo VARCHAR(500) DEFAULT NULL,
-            location VARCHAR(100) NOT NULL,
-            work_type VARCHAR(50) NOT NULL,
-            level VARCHAR(50) NOT NULL,
-            salary VARCHAR(100) DEFAULT NULL,
-            description TEXT DEFAULT NULL,
-            requirements TEXT DEFAULT NULL,
-            deadline DATE DEFAULT NULL,
-            status ENUM('pending','active','closed') NOT NULL DEFAULT 'active',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    try {
-        $colsStmt = $db->query("SHOW COLUMNS FROM users");
-        $existingCols = array_column($colsStmt->fetchAll(), 'Field');
-        $addCols = [
-            'avatar' => "ALTER TABLE users ADD COLUMN avatar MEDIUMTEXT DEFAULT NULL",
-            'company' => "ALTER TABLE users ADD COLUMN company VARCHAR(200) DEFAULT NULL",
-            'status' => "ALTER TABLE users ADD COLUMN status ENUM('active','suspended') NOT NULL DEFAULT 'active'",
-            'phone' => "ALTER TABLE users ADD COLUMN phone VARCHAR(20) DEFAULT NULL",
-            'dob' => "ALTER TABLE users ADD COLUMN dob DATE DEFAULT NULL",
-            'gender' => "ALTER TABLE users ADD COLUMN gender VARCHAR(20) DEFAULT NULL",
-            'address' => "ALTER TABLE users ADD COLUMN address VARCHAR(200) DEFAULT NULL",
-            'position' => "ALTER TABLE users ADD COLUMN position VARCHAR(100) DEFAULT NULL",
-            'experience' => "ALTER TABLE users ADD COLUMN experience VARCHAR(50) DEFAULT NULL",
-            'skills' => "ALTER TABLE users ADD COLUMN skills TEXT DEFAULT NULL",
-            'bio' => "ALTER TABLE users ADD COLUMN bio TEXT DEFAULT NULL",
-        ];
-
-        foreach ($addCols as $col => $sql) {
-            if (!in_array($col, $existingCols)) {
-                try {
-                    $db->exec($sql);
-                } catch (Exception $e) {
-                }
-            }
-        }
-    } catch (Exception $e) {
-    }
-
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS applications (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            job_id     INT NOT NULL,
-            user_id    INT NOT NULL,
-            status     ENUM('new','reviewing','shortlisted','rejected') NOT NULL DEFAULT 'new',
-            applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (job_id)  REFERENCES jobs(id)  ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY uq_application (job_id, user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS saved_jobs (
-            id       INT AUTO_INCREMENT PRIMARY KEY,
-            job_id   INT NOT NULL,
-            user_id  INT NOT NULL,
-            saved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (job_id)  REFERENCES jobs(id)  ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE KEY uq_saved (job_id, user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS site_ratings (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            rating     TINYINT NOT NULL,
-            comment    TEXT DEFAULT NULL,
-            ip         VARCHAR(45) DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    $checkAdmin = $db->prepare("
-		SELECT id
-		FROM users
-		WHERE email = ?
-		LIMIT 1
-	");
-
-    $checkAdmin->execute([ADMIN_EMAIL]);
-    $adminAlreadyExists = $checkAdmin->fetch();
-
-    if (!$adminAlreadyExists) {
-        $hashedPassword = password_hash(ADMIN_PASSWORD, PASSWORD_DEFAULT);
-
-        $insertAdmin = $db->prepare("
-			INSERT INTO users (
-				full_name,
-				email,
-				password,
-				role
-			)
-			VALUES (?, ?, ?, 'admin')
-		");
-
-        $insertAdmin->execute([ADMIN_NAME, ADMIN_EMAIL, $hashedPassword]);
-    }
 }
 
 function createLoginToken(array $userInfo): string
@@ -271,7 +134,6 @@ function sendOtpByEmail(string $toEmail, string $otpCode): bool
     return mail($toEmail, $subject, $body, $headers);
 }
 
-createTablesAndDefaultAdmin();
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 
@@ -857,16 +719,6 @@ if ($action === 'submit-rating') {
     }
 
     $db = getDatabaseConnection();
-
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS site_ratings (
-            id         INT AUTO_INCREMENT PRIMARY KEY,
-            rating     TINYINT NOT NULL,
-            comment    TEXT DEFAULT NULL,
-            ip         VARCHAR(45) DEFAULT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
 
     $ip = $_SERVER['REMOTE_ADDR'] ?? null;
     $db->prepare("INSERT INTO site_ratings (rating, comment, ip) VALUES (?, ?, ?)")->execute([$rating, $comment ?: null, $ip]);

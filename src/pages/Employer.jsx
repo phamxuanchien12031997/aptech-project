@@ -1,200 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import Logo from '../assets/img/Logo.png';
 
-const MOCK_JOBS = [
-    {
-        id: "JP001",
-        title: "Lập Trình Viên Full Stack - ReactJS & Node.js",
-        description: "Phát triển và duy trì các ứng dụng web sử dụng ReactJS ở frontend và Node.js ở backend. Tham gia thiết kế kiến trúc hệ thống, review code và mentor junior developer.",
-        requirements: "Tối thiểu 2 năm kinh nghiệm React, Node.js\nThành thạo TypeScript, REST API, Git\nCó kinh nghiệm với PostgreSQL hoặc MongoDB",
-        salary: "20-35 triệu",
-        location: "Hà Nội",
-        category: "Công nghệ thông tin",
-        type: "Full-time",
-        deadline: "2026-06-15",
-        posted: "2026-05-01",
-        status: "active",
-        applicants: 14,
-    },
-    {
-        id: "JP002",
-        title: "Nhân Viên Marketing Digital",
-        description: "Lên kế hoạch và triển khai chiến dịch marketing đa kênh. Phân tích hiệu quả và tối ưu ngân sách.",
-        requirements: "Có kinh nghiệm chạy quảng cáo Facebook/Google Ads\nHiểu biết về SEO, Content Marketing",
-        salary: "10-15 triệu",
-        location: "Hồ Chí Minh",
-        category: "Marketing / PR",
-        type: "Full-time",
-        deadline: "2026-05-30",
-        posted: "2026-05-02",
-        status: "active",
-        applicants: 7,
-    },
-    {
-        id: "JP003",
-        title: "Thiết Kế UX/UI - Mobile App",
-        description: "Nghiên cứu người dùng, tạo wireframe và prototype cho ứng dụng mobile.",
-        requirements: "Thành thạo Figma, Adobe XD\nCó portfolio thể hiện kinh nghiệm thiết kế mobile",
-        salary: "18-28 triệu",
-        location: "Hà Nội",
-        category: "Thiết kế",
-        type: "Full-time",
-        deadline: "2026-06-25",
-        posted: "2026-05-06",
-        status: "closed",
-        applicants: 22,
-    },
-];
 
-const MOCK_CANDIDATES = [
-    {
-        id: "C001",
-        name: "Nguyễn Thị Bình",
-        position: "Frontend Developer",
-        experience: "2-3 năm",
-        skills: ["React", "TypeScript", "CSS"],
-        location: "Hà Nội",
-        email: "binh@email.com",
-        phone: "0901234567",
-        appliedJob: "JP001",
-        appliedDate: "2026-05-03",
-        status: "reviewing",
-        bio: "Lập trình viên frontend với 2 năm kinh nghiệm làm việc với React ecosystem. Đam mê tạo ra UI đẹp và hiệu suất cao.",
-        education: "Đại học Bách Khoa Hà Nội - Công nghệ thông tin"
-    },
-    {
-        id: "C002",
-        name: "Trần Văn Cường",
-        position: "Full Stack Developer",
-        experience: "3-5 năm",
-        skills: ["Node.js", "React", "PostgreSQL", "Docker"],
-        location: "Hà Nội",
-        email: "cuong@email.com",
-        phone: "0912345678",
-        appliedJob: "JP001",
-        appliedDate: "2026-05-04",
-        status: "shortlisted",
-        bio: "Senior developer với 4 năm kinh nghiệm xây dựng hệ thống web quy mô lớn. Có kinh nghiệm dẫn dắt team nhỏ.",
-        education: "Đại học Quốc gia Hà Nội - Khoa học máy tính"
-    },
-    {
-        id: "C003",
-        name: "Lê Minh Dũng",
-        position: "Backend Developer",
-        experience: "1-2 năm",
-        skills: ["Python", "Django", "MySQL"],
-        location: "Hồ Chí Minh",
-        email: "dung@email.com",
-        phone: "0923456789",
-        appliedJob: "JP001",
-        appliedDate: "2026-05-05",
-        status: "new",
-        bio: "Junior developer mới tốt nghiệp, nhiệt huyết học hỏi và sẵn sàng thử thách mới.",
-        education: "Đại học Công nghệ TP.HCM - CNTT"
-    },
-    {
-        id: "C004",
-        name: "Phạm Thị Hoa",
-        position: "Digital Marketing Specialist",
-        experience: "2-3 năm",
-        skills: ["Facebook Ads", "Google Ads", "SEO", "Analytics"],
-        location: "Hồ Chí Minh",
-        email: "hoa@email.com",
-        phone: "0934567890",
-        appliedJob: "JP002",
-        appliedDate: "2026-05-03",
-        status: "shortlisted",
-        bio: "Chuyên viên marketing với kinh nghiệm quản lý ngân sách quảng cáo trên 200 triệu/tháng.",
-        education: "Đại học Kinh tế TP.HCM - Marketing"
-    },
-    {
-        id: "C005",
-        name: "Hoàng Văn Em",
-        position: "UI/UX Designer",
-        experience: "2-3 năm",
-        skills: ["Figma", "Adobe XD", "Prototyping", "User Research"],
-        location: "Hà Nội",
-        email: "em@email.com",
-        phone: "0945678901",
-        appliedJob: "JP003",
-        appliedDate: "2026-05-07",
-        status: "new",
-        bio: "Designer với niềm đam mê tạo ra trải nghiệm người dùng tuyệt vời. Portfolio đa dạng từ mobile đến web.",
-        education: "Đại học Mỹ thuật Công nghiệp Hà Nội"
-    },
-    {
-        id: "C006",
-        name: "Vũ Thị Phương",
-        position: "Senior UX Designer",
-        experience: "3-5 năm",
-        skills: ["Figma", "User Research", "Design System", "Motion Design"],
-        location: "Hà Nội",
-        email: "phuong@email.com",
-        phone: "0956789012",
-        appliedJob: "JP003",
-        appliedDate: "2026-05-08",
-        status: "reviewing",
-        bio: "Senior designer với 4 năm kinh nghiệm, từng làm tại các startup công nghệ lớn tại Việt Nam.",
-        education: "RMIT Việt Nam - Đa phương tiện"
-    },
-];
 
-const MOCK_TALENT_POOL = [
-    {
-        id: "T001",
-        name: "Đinh Quốc Huy",
-        position: "Data Engineer",
-        experience: "3-5 năm",
-        skills: ["Python", "Spark", "Airflow", "SQL"],
-        location: "Hà Nội",
-        email: "huy@email.com"
-    },
-    {
-        id: "T002",
-        name: "Bùi Thị Lan",
-        position: "Product Manager",
-        experience: "2-3 năm",
-        skills: ["Agile", "Jira", "Figma", "SQL"],
-        location: "Hồ Chí Minh",
-        email: "lan@email.com"
-    },
-    {
-        id: "T003",
-        name: "Ngô Văn Minh",
-        position: "DevOps Engineer",
-        experience: "3-5 năm",
-        skills: ["Docker", "Kubernetes", "AWS", "Terraform"],
-        location: "Hà Nội",
-        email: "minh@email.com"
-    },
-    {
-        id: "T004",
-        name: "Trịnh Thị Nga",
-        position: "React Developer",
-        experience: "1-2 năm",
-        skills: ["React", "JavaScript", "CSS", "Redux"],
-        location: "Đà Nẵng",
-        email: "nga@email.com"
-    },
-    {
-        id: "T005",
-        name: "Cao Minh Phát",
-        position: "iOS Developer",
-        experience: "2-3 năm",
-        skills: ["Swift", "Xcode", "UIKit", "CoreData"],
-        location: "Hồ Chí Minh",
-        email: "phat@email.com"
-    },
-    {
-        id: "T006",
-        name: "Lý Thị Quyên",
-        position: "Content Marketing",
-        experience: "1-2 năm",
-        skills: ["Copywriting", "SEO", "Social Media", "Canva"],
-        location: "Hà Nội",
-        email: "quyen@email.com"
-    },
-];
 
 const CATEGORIES = ["Công nghệ thông tin", "Marketing / PR", "Thiết kế", "Kế toán / Kiểm toán", "Kinh doanh / Bán hàng", "Nhân sự", "Dịch vụ khách hàng"];
 const JOB_TYPES = ["Full-time", "Part-time", "Freelancer", "Thực tập"];
@@ -1493,7 +1301,7 @@ function TalentTab() {
     const [searchSkill, setSearchSkill] = useState("");
     const [searchExperience, setSearchExperience] = useState("Tất cả");
     const [searchLocation, setSearchLocation] = useState("Tất cả");
-    const [results, setResults] = useState(MOCK_TALENT_POOL);
+    const [results, setResults] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
 
     // Filters the talent pool and updates the results state.
@@ -1501,8 +1309,8 @@ function TalentTab() {
         const keyword = searchSkill.toLowerCase();
         const filtered = [];
 
-        for (let i = 0; i < MOCK_TALENT_POOL.length; i++) {
-            const talent = MOCK_TALENT_POOL[i];
+        for (let i = 0; i < results.length; i++) {
+            const talent = results[i];
 
             // Skill/position match — true if no keyword was typed
             let skillMatch = true;
@@ -1772,8 +1580,8 @@ function CompanyTab() {
 
 export default function EmployerDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
-    const [jobs, setJobs] = useState(MOCK_JOBS);
-    const [candidates, setCandidates] = useState(MOCK_CANDIDATES);
+    const [jobs, setJobs] = useState([]);
+    const [candidates, setCandidates] = useState([]);
 
     // Maps tab ids to the header title shown in the top bar
     const TAB_TITLES = {
