@@ -39,7 +39,7 @@ const HomePage = () => {
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Header />
-            <Hero />
+            <Hero onSearch={handleFilter} />
             <div className="max-w-7xl mx-auto px-8 py-8 w-full flex-1">
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
 

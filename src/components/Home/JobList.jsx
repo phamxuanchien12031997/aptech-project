@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 
-const API = 'http://localhost/jobhot/server/index.php';
+const API = '/server/index.php';
 
 const SectionHeader = ({ title, link }) => {
     return (

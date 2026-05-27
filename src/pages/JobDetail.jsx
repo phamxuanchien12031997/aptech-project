@@ -163,7 +163,7 @@ function CompanyLogo({ logo, companyName }) {
 // Redirects to "/" if the id is not found in the mock data.
 // ─────────────────────────────────────────────
 
-const API = 'http://localhost/jobhot/server/index.php';
+const API = '/server/index.php';
 
 const JobDetailPage = () => {
     const { id } = useParams();

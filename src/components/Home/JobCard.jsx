@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginModal from './LoginModal';
 
+const API = '/server/index.php';
+
 const JobCard = ({ job }) => {
     const navigate = useNavigate();
     const [saved, setSaved] = useState(false);
@@ -13,12 +15,33 @@ const JobCard = ({ job }) => {
         urgent = true;
     }
 
-    const handleSaveClick = (e) => {
+    const isLoggedIn = () => {
+        return !!localStorage.getItem('token');
+    };
+
+    const handleSaveClick = async (e) => {
         e.stopPropagation();
-        if (saved) {
-            setSaved(false);
-        } else {
-            setSaved(true);
+
+        if (!isLoggedIn()) {
+            setShowLoginModal(true);
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        const action = saved ? 'unsave-job' : 'save-job';
+
+        try {
+            await fetch(API + '?action=' + action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify({ job_id: job.id }),
+            });
+            setSaved(!saved);
+        } catch (error) {
+            console.error('Error saving job:', error);
         }
     };
 
@@ -35,10 +58,6 @@ const JobCard = ({ job }) => {
     if (urgent) {
         daysClass = 'text-xs px-2.5 py-1 rounded-full font-medium bg-red-50 text-red-600';
     }
-
-    const isLoggedIn = () => {
-        return !!localStorage.getItem('token');
-    };
 
     const handleCardClick = () => {
         if (isLoggedIn()) {

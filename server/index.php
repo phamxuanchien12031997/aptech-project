@@ -141,6 +141,7 @@ if ($action === 'get-jobs') {
     $workTypeFilter = isset($_GET['workType']) ? trim($_GET['workType']) : '';
     $levelFilter = isset($_GET['level']) ? trim($_GET['level']) : '';
     $locationFilter = isset($_GET['location']) ? trim($_GET['location']) : '';
+    $keywordFilter = isset($_GET['keyword']) ? trim($_GET['keyword']) : '';
 
     $sql = "
 		SELECT * 
@@ -149,6 +150,12 @@ if ($action === 'get-jobs') {
 	";
 
     $queryParams = [];
+
+    if ($keywordFilter !== '') {
+        $sql .= " AND (title LIKE ? OR company LIKE ?)";
+        $queryParams[] = '%' . $keywordFilter . '%';
+        $queryParams[] = '%' . $keywordFilter . '%';
+    }
 
     if ($workTypeFilter !== '') {
         $sql .= " AND work_type = ?";
@@ -171,6 +178,19 @@ if ($action === 'get-jobs') {
     $jobs = $statement->fetchAll();
     sendJsonResponse(true, 'Lấy danh sách việc làm thành công.', ['jobs' => $jobs]);
 }
+
+if ($action === 'get-stats') {
+    $db = getDatabaseConnection();
+    $jobCount = $db->query("SELECT COUNT(*) FROM jobs WHERE status = 'active'")->fetchColumn();
+    $companyCount = $db->query("SELECT COUNT(DISTINCT company) FROM jobs")->fetchColumn();
+    $candidateCount = $db->query("SELECT COUNT(*) FROM users WHERE role = 'user'")->fetchColumn();
+    sendJsonResponse(true, 'Lấy thống kê thành công.', [
+        'jobs' => (int)$jobCount,
+        'companies' => (int)$companyCount,
+        'candidates' => (int)$candidateCount,
+    ]);
+}
+
 
 if ($action === 'get-job') {
     $jobId = isset($_GET['id']) ? intval($_GET['id']) : 0;
@@ -198,7 +218,7 @@ if ($action === 'get-categories') {
         $statement->execute();
         $categoryRows = $statement->fetchAll();
 
-        $categories = array_map(function($row) {
+        $categories = array_map(function ($row) {
             return [
                 'label' => $row['category'],
                 'icon' => '💼',

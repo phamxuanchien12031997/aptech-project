@@ -10,7 +10,7 @@ const CATEGORIES = [
     'Dịch vụ khách hàng',
 ];
 
-const API = 'http://localhost/aptech-project-main/server/index.php';
+const API = '/server/index.php';
 
 const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
     const [profile, setProfile] = useState({

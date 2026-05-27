@@ -1577,7 +1577,7 @@ function CompanyTab() {
 //  EmployerDashboard (root entry point) 
 // Holds the top-level state (jobs, candidates, active tab)
 // and renders the sidebar + the currently active tab panel.
-const API = 'http://localhost/jobhot/server/index.php';
+const API = '/server/index.php';
 
 export default function EmployerDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
@@ -1599,11 +1599,11 @@ export default function EmployerDashboard() {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                
+
                 // Fetch jobs from backend
                 const jobsResponse = await fetch(API + '?action=get-jobs');
                 const jobsData = await jobsResponse.json();
-                
+
                 if (jobsData.success) {
                     const jobsList = jobsData.data?.jobs || jobsData.jobs || [];
                     // Initialize jobs with status from backend or default to 'active'
@@ -1613,7 +1613,7 @@ export default function EmployerDashboard() {
                     }));
                     setJobs(processedJobs);
                 }
-                
+
                 // Fetch applied jobs (candidates)
                 const token = localStorage.getItem('token');
                 if (token) {
@@ -1623,7 +1623,7 @@ export default function EmployerDashboard() {
                         }
                     });
                     const candidatesData = await candidatesResponse.json();
-                    
+
                     if (candidatesData.success) {
                         const candidatesList = candidatesData.data || [];
                         setCandidates(candidatesList);
