@@ -57,10 +57,11 @@ const DefaultResults = () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    setJobs(data.jobs || []);
+                    setJobs(data.data?.jobs || data.jobs || []);
                 }
             } catch (error) {
                 console.error('Error fetching jobs:', error);
+                setJobs([]);
             } finally {
                 setLoading(false);
             }
@@ -72,10 +73,11 @@ const DefaultResults = () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    setCategories(data.categories || []);
+                    setCategories(data.data?.categories || data.categories || []);
                 }
             } catch (error) {
                 console.error('Error fetching categories:', error);
+                setCategories([]);
             }
         };
 

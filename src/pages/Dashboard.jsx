@@ -1577,11 +1577,13 @@ function CompanyTab() {
 //  EmployerDashboard (root entry point) 
 // Holds the top-level state (jobs, candidates, active tab)
 // and renders the sidebar + the currently active tab panel.
+const API = 'http://localhost/jobhot/server/index.php';
 
 export default function EmployerDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
     const [jobs, setJobs] = useState([]);
     const [candidates, setCandidates] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Maps tab ids to the header title shown in the top bar
     const TAB_TITLES = {
@@ -1591,6 +1593,51 @@ export default function EmployerDashboard() {
         talent: "Tìm kiếm ứng viên",
         company: "Thông tin công ty",
     };
+
+    // Fetch data when component mounts
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                
+                // Fetch jobs from backend
+                const jobsResponse = await fetch(API + '?action=get-jobs');
+                const jobsData = await jobsResponse.json();
+                
+                if (jobsData.success) {
+                    const jobsList = jobsData.data?.jobs || jobsData.jobs || [];
+                    // Initialize jobs with status from backend or default to 'active'
+                    const processedJobs = jobsList.map(job => ({
+                        ...job,
+                        status: job.status || 'active'
+                    }));
+                    setJobs(processedJobs);
+                }
+                
+                // Fetch applied jobs (candidates)
+                const token = localStorage.getItem('token');
+                if (token) {
+                    const candidatesResponse = await fetch(API + '?action=get-applied-jobs', {
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    });
+                    const candidatesData = await candidatesResponse.json();
+                    
+                    if (candidatesData.success) {
+                        const candidatesList = candidatesData.data || [];
+                        setCandidates(candidatesList);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     // Xóa token và chuyển về trang đăng nhập
     function handleLogout() {

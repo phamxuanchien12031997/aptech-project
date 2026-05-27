@@ -169,7 +169,56 @@ if ($action === 'get-jobs') {
     $statement = getDatabaseConnection()->prepare($sql);
     $statement->execute($queryParams);
     $jobs = $statement->fetchAll();
-    sendJsonResponse(true, 'Lấy danh sách việc làm thành công.', $jobs);
+    sendJsonResponse(true, 'Lấy danh sách việc làm thành công.', ['jobs' => $jobs]);
+}
+
+if ($action === 'get-job') {
+    $jobId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+    if ($jobId === 0) {
+        sendJsonResponse(false, 'ID công việc không hợp lệ.', [], 400);
+    }
+
+    $sql = "SELECT * FROM jobs WHERE id = ?";
+    $statement = getDatabaseConnection()->prepare($sql);
+    $statement->execute([$jobId]);
+    $job = $statement->fetch();
+
+    if (!$job) {
+        sendJsonResponse(false, 'Không tìm thấy công việc.', [], 404);
+    }
+
+    sendJsonResponse(true, 'Lấy chi tiết công việc thành công.', $job);
+}
+
+if ($action === 'get-categories') {
+    try {
+        $sql = "SELECT DISTINCT category FROM jobs ORDER BY category ASC";
+        $statement = getDatabaseConnection()->prepare($sql);
+        $statement->execute();
+        $categoryRows = $statement->fetchAll();
+
+        $categories = array_map(function($row) {
+            return [
+                'label' => $row['category'],
+                'icon' => '💼',
+                'count' => 0
+            ];
+        }, $categoryRows);
+
+        if (empty($categories)) {
+            $categories = [
+                ['label' => 'Công nghệ thông tin', 'icon' => '💻', 'count' => 0],
+                ['label' => 'Marketing / PR', 'icon' => '📢', 'count' => 0],
+                ['label' => 'Thiết kế', 'icon' => '🎨', 'count' => 0],
+                ['label' => 'Kế toán / Kiểm toán', 'icon' => '📊', 'count' => 0],
+            ];
+        }
+
+        sendJsonResponse(true, 'Lấy danh sách danh mục thành công.', ['categories' => $categories]);
+    } catch (Exception $e) {
+        sendJsonResponse(false, 'Lỗi khi lấy danh mục: ' . $e->getMessage(), [], 500);
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

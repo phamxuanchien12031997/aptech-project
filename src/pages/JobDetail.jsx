@@ -163,6 +163,8 @@ function CompanyLogo({ logo, companyName }) {
 // Redirects to "/" if the id is not found in the mock data.
 // ─────────────────────────────────────────────
 
+const API = 'http://localhost/jobhot/server/index.php';
+
 const JobDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -170,27 +172,66 @@ const JobDetailPage = () => {
     const [job, setJob] = useState(null);
     const [saved, setSaved] = useState(false);
     const [applied, setApplied] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
 
     // ── Load job data on mount ──
-    // Looks up the job by id. If not found, redirects to the home page.
+    // Fetches job details from the backend API
 
     useEffect(function () {
-        // TODO: replace with API call — e.g. fetch(`/api/jobs/${id}`)
-        //        then call setJob(data) on success or navigate('/') on 404
-        navigate('/');
+        const fetchJob = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await fetch(API + `?action=get-job&id=${id}`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    setJob(data.data);
+                } else {
+                    setError('Job not found');
+                    setTimeout(() => navigate('/'), 2000);
+                }
+            } catch (error) {
+                console.error('Error fetching job:', error);
+                setError('Failed to load job details');
+                setTimeout(() => navigate('/'), 2000);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchJob();
+        }
     }, [id, navigate]);
 
 
     // ── Loading state ──
-    // Shown while job data hasn't been set yet.
+    // Shown while job data is being fetched
 
-    if (!job) {
+    if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <div className="text-4xl mb-4">⏳</div>
-                    <div className="text-gray-600">Đang tải...</div>
+                    <div className="text-gray-600">Đang tải thông tin công việc...</div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Error state ──
+    // Shown if job fails to load
+
+    if (error || !job) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="text-4xl mb-4">❌</div>
+                    <div className="text-gray-600 mb-2">{error || 'Không tìm thấy công việc'}</div>
+                    <div className="text-sm text-gray-500">Đang chuyển hướng về trang chủ...</div>
                 </div>
             </div>
         );
