@@ -290,63 +290,67 @@ INSERT INTO users
 VALUES
 
     -- Admin
-    (1, 'Quản trị viên JobHot', 'admin@jobhot.vn', '$2y$10$REPLACEME_WITH_REAL_BCRYPT_HASH',
+    -- Password: Abc123.,/
+    (1, 'Quản trị viên JobHot', 'admin@jobhot.vn', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'admin', 'active', NULL, NULL, NULL, NULL,
         NULL, NULL, '2026-04-15 10:00:00'),
 
     -- Basic job seekers (Dashboard.jsx MOCK_USERS)
-    (2, 'Nguyễn Văn A', 'a@email.com', 'hashed_pwd',
+    -- Password: Abc123.,/
+    (2, 'Nguyễn Văn A', 'a@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-01 08:30:00'),
-    (3, 'Lê Văn C', 'c@email.com', 'hashed_pwd',
+    (3, 'Lê Văn C', 'c@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-03 09:15:00'),
-    (5, 'Hoàng E', 'e@email.com', 'hashed_pwd',
+    (5, 'Hoàng E', 'e@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-05 14:20:00'),
 
     -- Job seekers with full profiles (Employer.jsx MOCK_CANDIDATES)
-    (6, 'Nguyễn Thị Bình', 'binh@email.com', 'hashed_pwd',
+    -- Password: Abc123.,/
+    (6, 'Nguyễn Thị Bình', 'binh@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL,
         'Frontend Developer', '2-3 năm', 'React,TypeScript,CSS',
         'Lập trình viên frontend với 2 năm kinh nghiệm làm việc với React ecosystem. Đam mê tạo ra UI đẹp và hiệu suất cao.',
         'Đại học Bách Khoa Hà Nội - Công nghệ thông tin', '2026-05-03 10:00:00'),
 
-    (7, 'Trần Văn Cường', 'cuong@email.com', 'hashed_pwd',
+    (7, 'Trần Văn Cường', 'cuong@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL,
         'Full Stack Developer', '3-5 năm', 'Node.js,React,PostgreSQL,Docker',
         'Senior developer với 4 năm kinh nghiệm xây dựng hệ thống web quy mô lớn. Có kinh nghiệm dẫn dắt team nhỏ.',
         'Đại học Quốc gia Hà Nội - Khoa học máy tính', '2026-05-04 11:00:00'),
 
-    (8, 'Lê Minh Dũng', 'dung@email.com', 'hashed_pwd',
+    (8, 'Lê Minh Dũng', 'dung@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL,
         'Backend Developer', '1-2 năm', 'Python,Django,MySQL',
         'Junior developer mới tốt nghiệp, nhiệt huyết học hỏi và sẵn sàng thử thách mới.',
         'Đại học Công nghệ TP.HCM - CNTT', '2026-05-05 12:30:00'),
 
-    (9, 'Phạm Thị Hoa', 'hoa@email.com', 'hashed_pwd',
+    (9, 'Phạm Thị Hoa', 'hoa@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL,
         'Digital Marketing Specialist', '2-3 năm', 'Facebook Ads,Google Ads,SEO,Analytics',
         'Chuyên viên marketing với kinh nghiệm quản lý ngân sách quảng cáo trên 200 triệu/tháng.',
         'Đại học Kinh tế TP.HCM - Marketing', '2026-05-03 13:45:00'),
 
-    (10, 'Hoàng Văn Em', 'em@email.com', 'hashed_pwd',
+    (10, 'Hoàng Văn Em', 'em@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL,
         'UI/UX Designer', '2-3 năm', 'Figma,Adobe XD,Prototyping,User Research',
         'Designer với niềm đam mê tạo ra trải nghiệm người dùng tuyệt vời. Portfolio đa dạng từ mobile đến web.',
         'Đại học Mỹ thuật Công nghiệp Hà Nội', '2026-05-07 14:10:00'),
 
-    (11, 'Vũ Thị Phương', 'phuong@email.com', 'hashed_pwd',
+    (11, 'Vũ Thị Phương', 'phuong@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'user', 'active', NULL,
         'Senior UX Designer', '3-5 năm', 'Figma,User Research,Design System,Motion Design',
         'Senior designer với 4 năm kinh nghiệm, từng làm tại các startup công nghệ lớn tại Việt Nam.',
         'RMIT Việt Nam - Đa phương tiện', '2026-05-08 15:20:00'),
 
     -- Employers (Dashboard.jsx MOCK_USERS + Employer.jsx)
-    (4, 'Trần Thị B', 'b@email.com', 'hashed_pwd',
+    -- Password: Abc123.,/
+    (4, 'Trần Thị B', 'b@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'employer', 'active', 'FPT Software', NULL, NULL, NULL, NULL, NULL, '2026-05-02 08:00:00'),
-    (12, 'Phạm Thị D', 'd@email.com', 'hashed_pwd',
+    (12, 'Phạm Thị D', 'd@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'employer', 'suspended', 'Admicro', NULL, NULL, NULL, NULL, NULL, '2026-05-04 09:30:00'),
-    (13, 'Nguyễn Minh Huy', 'huy2@email.com', 'hashed_pwd',
+    (13, 'Nguyễn Minh Huy', 'huy2@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'employer', 'active', 'MOMO', NULL, NULL, NULL, NULL, NULL, '2026-05-06 10:00:00'),
-    (14, 'Trương Văn Kiên', 'kien@email.com', 'hashed_pwd',
+    (14, 'Trương Văn Kiên', 'kien@email.com', '$2y$10$E9DHRN6.qG/V7CvqZ6nEgeUkCKV1CgOOzKfJ2D9r7QH.GhK5Lw3km',
         'employer', 'active', 'Samsung Vina', NULL, NULL, NULL, NULL, NULL, '2026-05-05 11:15:00');
 
 
