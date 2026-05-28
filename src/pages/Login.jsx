@@ -99,6 +99,15 @@ const LoginPage = () => {
                 password: password,
             });
 
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            localStorage.removeItem('name');
+            localStorage.removeItem('email');
+            localStorage.removeItem('industry');
+            localStorage.removeItem('company');
+            localStorage.removeItem('avatar');
+            localStorage.removeItem('rememberMe');
+
             const userData = response.data.data;
             const token = userData.token;
             const role = userData.role;

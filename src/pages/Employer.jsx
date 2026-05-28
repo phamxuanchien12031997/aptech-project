@@ -1643,6 +1643,13 @@ export default function EmployerDashboard() {
     // Xóa token và chuyển về trang đăng nhập
     function handleLogout() {
         localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("name");
+        localStorage.removeItem("email");
+        localStorage.removeItem("industry");
+        localStorage.removeItem("company");
+        localStorage.removeItem("avatar");
+        localStorage.removeItem("rememberMe");
         window.location.href = "/login";
     }
 
