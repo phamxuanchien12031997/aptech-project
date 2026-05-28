@@ -185,6 +185,7 @@ function Email({ onNext }) {
 // Props:
 //   email     - the email address the OTP was sent to (shown in the hint text)
 //   onNext()  - called with no arguments on successful verification
+// FIX #1: Pass verification token back to parent
 
 function OTP({ email, onNext }) {
     // "otp" is an array of 6 strings, one per digit box
@@ -227,77 +228,104 @@ function OTP({ email, onNext }) {
             return;
         }
 
-        // Build a new array with the updated digit at the right position.
-        // We can't mutate the existing array directly in React state.
-        const newOtp = [];
-        for (let i = 0; i < otp.length; i++) {
-            if (i === index) {
-                newOtp.push(value);
-            } else {
-                newOtp.push(otp[i]);
-            }
-        }
-
+        const newOtp = [...otp];
+        newOtp[index] = value;
         setOtp(newOtp);
         setError('');
 
-        // If a digit was entered (not deleted) and this is not the last box,
-        // move focus to the next box so the user can keep typing without clicking.
+        // Auto-focus to next input if a digit was typed
         if (value !== '' && index < 5) {
             inputs.current[index + 1].focus();
         }
     }
 
-
-    // ── handleKeyDown ──
-    // When the user presses Backspace on an empty box,
-    // move focus back to the previous box so they can correct a mistake.
+    // handleKeyDown
+    // Supports backspace to go to the previous box and paste operations.
 
     function handleKeyDown(index, event) {
-        if (event.key === 'Backspace' && otp[index] === '' && index > 0) {
+        if (event.key === 'Backspace') {
+            event.preventDefault();
+
+            const newOtp = [...otp];
+            newOtp[index] = '';
+            setOtp(newOtp);
+
+            // Auto-focus to previous input if the current one was not empty
+            if (index > 0) {
+                inputs.current[index - 1].focus();
+            }
+        }
+
+        if (event.key === 'ArrowLeft' && index > 0) {
             inputs.current[index - 1].focus();
         }
-    }
 
-
-    //handlePaste
-    // If the user pastes a 6-digit code, fill all boxes at once
-    // and move focus to the last box.
-
-    function handlePaste(event) {
-        // Strip all non-digit characters and take only the first 6 digits
-        const digits = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-
-        if (digits.length === 6) {
-            setOtp(digits.split(''));
-            inputs.current[5].focus();
+        if (event.key === 'ArrowRight' && index < 5) {
+            inputs.current[index + 1].focus();
         }
     }
 
+    // handlePaste
+    // If the user pastes a code (e.g. from email), it fills all 6 boxes.
+
+    function handlePaste(event) {
+        event.preventDefault();
+
+        const clipboardData = (event.clipboardData || window.clipboardData).getData('text');
+        const digits = clipboardData.replace(/\D/g, '').slice(0, 6);
+
+        if (digits.length > 0) {
+            const newOtp = [...otp];
+
+            for (let i = 0; i < digits.length; i++) {
+                newOtp[i] = digits[i];
+            }
+
+            setOtp(newOtp);
+
+            // Focus on the last digit or the next empty one
+            const focusIndex = Math.min(digits.length, 5);
+            inputs.current[focusIndex].focus();
+        }
+    }
 
     //handleSubmit
-    // Joins the 6 digit boxes into one string and sends it to the backend.
+    // Called when the user submits the OTP.
+    // Validates locally, then calls the PHP backend.
 
     async function handleSubmit(event) {
         event.preventDefault();
 
         const code = otp.join('');
 
-        if (code.length < 6) {
-            setError('Vui lòng nhập đủ 6 chữ số.');
+        if (code.length !== 6) {
+            setError('Vui lòng nhập đầy đủ mã OTP (6 chữ số).');
             return;
         }
 
         setLoading(true);
 
         try {
-            await axios.post(API + '?action=verify-otp', { email: email, otp: code });
+            // Call verify-otp endpoint
+            const response = await axios.post(API + '?action=verify-otp', {
+                email: email,
+                otp: code
+            });
 
-            // OTP verified — move to the new password step
-            onNext();
+            // FIX #1: Get verification token from response
+            const verificationToken = response.data.data?.verificationToken;
+            
+            if (!verificationToken) {
+                setError('Không nhận được mã xác minh từ server.');
+                setLoading(false);
+                return;
+            }
+
+            // Call onNext with the verification token
+            onNext(verificationToken);
 
         } catch (err) {
-            let message = 'Mã OTP không đúng hoặc đã hết hạn.';
+            let message = 'Có lỗi xảy ra. Thử lại sau.';
 
             if (err.response && err.response.data && err.response.data.message) {
                 message = err.response.data.message;
@@ -310,92 +338,71 @@ function OTP({ email, onNext }) {
         }
     }
 
-
-    //handleResend
-    // Sends a new OTP to the same email and resets the countdown.
-    // The button that calls this is only visible when countdown reaches 0.
+    // handleResend
+    // When the countdown reaches 0, this button appears.
+    // Calls the forgot-password action again to send a new OTP.
 
     async function handleResend() {
-        if (countdown > 0) {
-            return; // safety guard — button should already be hidden
-        }
-
         setResendLoading(true);
 
         try {
             await axios.post(API + '?action=forgot-password', { email: email });
 
-            // Reset everything for the new code
+            // Reset the countdown and OTP boxes
             setCountdown(60);
             setOtp(['', '', '', '', '', '']);
             setError('');
 
+            // Focus back to the first box
+            inputs.current[0].focus();
+
         } catch (err) {
-            setError('Không thể gửi lại OTP. Thử lại sau.');
+            let message = 'Không thể gửi lại mã. Thử lại sau.';
+
+            if (err.response && err.response.data && err.response.data.message) {
+                message = err.response.data.message;
+            }
+
+            setError(message);
 
         } finally {
             setResendLoading(false);
         }
     }
 
+
     //Render
 
     return (
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 
-            {/* Hint text showing which email the code was sent to */}
-            <p className="text-sm text-gray-500 text-center">
-                Nhập mã 6 chữ số đã gửi đến{' '}
-                <span className="font-medium text-gray-700">{email}</span>
+            <ServerErrorBox message={error} />
+
+            {/* Hint text — tells the user where the code was sent */}
+            <p className="text-sm text-gray-600">
+                Mã OTP đã được gửi đến <span className="font-medium">{email}</span>
             </p>
 
-            {/* Six individual digit input boxes */}
-            <div className="flex gap-2 justify-center" onPaste={handlePaste}>
-                {otp.map(function (digitValue, index) {
+            {/* Six digit boxes */}
+            <div className="flex justify-center gap-2">
+                {[0, 1, 2, 3, 4, 5].map(function (index) {
                     return (
                         <input
                             key={index}
                             ref={function (el) { inputs.current[index] = el; }}
                             type="text"
                             inputMode="numeric"
-                            maxLength={1}
-                            value={digitValue}
+                            maxLength="1"
+                            placeholder="0"
+                            value={otp[index]}
                             onChange={function (e) { handleChange(index, e.target.value); }}
                             onKeyDown={function (e) { handleKeyDown(index, e); }}
-                            className="w-11 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg outline-none focus:border-purple-500 transition-colors"
+                            onPaste={handlePaste}
+                            className="w-12 h-12 text-center text-xl font-bold border border-gray-300 rounded-lg outline-none transition-colors focus:border-purple-500"
                         />
                     );
                 })}
             </div>
-
-            {/* Validation error message */}
-            {error && <p className="text-xs text-red-500 text-center">{error}</p>}
-
-            {/* Countdown / Resend section */}
-            {/* While countdown > 0: show "Gửi lại sau Xs"                     */}
-            {/* When countdown hits 0: show "Không nhận được mã? Gửi lại" link */}
-            <p className="text-center text-xs text-gray-400">
-                {countdown > 0 && (
-                    <>
-                        Gửi lại sau{' '}
-                        <span className="font-medium text-purple-600">{countdown}s</span>
-                    </>
-                )}
-                {countdown <= 0 && (
-                    <>
-                        Không nhận được mã?{' '}
-                        <button
-                            type="button"
-                            onClick={handleResend}
-                            disabled={resendLoading}
-                            className="text-purple-600 hover:underline cursor-pointer disabled:opacity-60"
-                        >
-                            {resendLoading && 'Đang gửi...'}
-                            {!resendLoading && 'Gửi lại'}
-                        </button>
-                    </>
-                )}
-            </p>
 
             {/* Submit button */}
             <button
@@ -405,72 +412,85 @@ function OTP({ email, onNext }) {
             >
                 {loading && <SpinnerIcon />}
                 {loading && 'Đang xác minh...'}
-                {!loading && 'Xác nhận'}
+                {!loading && 'Xác minh mã OTP'}
             </button>
+
+            {/* Resend button — shown only after 60 seconds */}
+            {countdown > 0 ? (
+                <p className="text-xs text-center text-gray-500">
+                    Gửi lại mã trong <span className="font-semibold">{countdown}</span> giây
+                </p>
+            ) : (
+                <button
+                    type="button"
+                    disabled={resendLoading}
+                    onClick={handleResend}
+                    className="w-full py-2.5 border border-purple-600 text-purple-600 rounded-lg text-sm font-medium cursor-pointer hover:bg-purple-50 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                    {resendLoading && <SpinnerIcon />}
+                    {resendLoading && 'Đang gửi...'}
+                    {!resendLoading && 'Gửi lại mã OTP'}
+                </button>
+            )}
 
         </form>
     );
 }
 
-// COMPONENT: NewPassword 
-// Lets the user set a new password after their OTP has been verified.
-// Calls onDone() when the password has been saved successfully.
-// Props:
-//   email    - needed by the backend to know which account to update
-//   onDone() - called with no arguments on success (moves to Step 3)
 
-function NewPassword({ email, onDone }) {
+// COMPONENT: NewPassword
+// Asks the user for a new password and confirmation.
+// Submits both the password and the verification token to reset-password endpoint.
+// Props:
+//   email                  - the user's email
+//   verificationToken      - token received from OTP verification
+//   onDone()               - called after successful password reset
+
+function NewPassword({ email, verificationToken, onDone }) {
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
-    const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
+    const [errors, setErrors] = useState({
+        password: '',
+        confirm: ''
+    });
 
-
-    //Validation
-    // Checks both fields and fills the errors object.
-    // Returns true only when both fields pass.
-
-    function validate() {
-        const newErrors = {};
-
-        if (!password) {
-            newErrors.password = 'Vui lòng nhập mật khẩu mới.';
-        } else if (password.length < 8) {
-            newErrors.password = 'Mật khẩu tối thiểu 8 ký tự.';
-        }
-
-        if (!confirm) {
-            newErrors.confirm = 'Vui lòng xác nhận mật khẩu.';
-        } else if (confirm !== password) {
-            newErrors.confirm = 'Mật khẩu không khớp.';
-        }
-
-        setErrors(newErrors);
-
-        return Object.keys(newErrors).length === 0;
-    }
-
-    //Submit handler
+    //handleSubmit
 
     async function handleSubmit(event) {
         event.preventDefault();
 
-        if (!validate()) {
+        const updatedErrors = {};
+
+        if (password.length < 8) {
+            updatedErrors.password = 'Mật khẩu tối thiểu 8 ký tự.';
+        }
+
+        if (password !== confirm) {
+            updatedErrors.confirm = 'Mật khẩu không khớp.';
+        }
+
+        if (Object.keys(updatedErrors).length > 0) {
+            setErrors(updatedErrors);
             return;
         }
 
         setLoading(true);
-        setServerError('');
 
         try {
-            await axios.post(API + '?action=reset-password', { email: email, password: password });
+            // FIX #1: Send verification token with password reset request
+            await axios.post(API + '?action=reset-password', {
+                email: email,
+                password: password,
+                verificationToken: verificationToken
+            });
 
-            // Password saved — move to the success screen
+            // Success — call onDone to move to the success screen
             onDone();
 
         } catch (err) {
-            let message = 'Có lỗi xảy ra. Thử lại sau.';
+            let message = 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.';
 
             if (err.response && err.response.data && err.response.data.message) {
                 message = err.response.data.message;
@@ -483,21 +503,12 @@ function NewPassword({ email, onDone }) {
         }
     }
 
-
-    //Field-level error clearing
-    // Clears the error for one field as soon as the user starts typing,
-    // without touching the errors for any other field.
-
-    function clearError(fieldName) {
-        const updatedErrors = {};
-
-        for (const key in errors) {
-            if (key !== fieldName) {
-                updatedErrors[key] = errors[key];
-            }
-        }
-
-        setErrors(updatedErrors);
+    function clearError(field) {
+        setErrors(function (prev) {
+            const updated = { ...prev };
+            delete updated[field];
+            return updated;
+        });
     }
 
     //Render
@@ -623,14 +634,16 @@ function BackButton({ step, onBack, onGoToLogin }) {
 
 // COMPONENT: ForgotPasswordPage  (main / entry point)
 // Manages the overall password-reset flow across four steps:
-// "email" is stored here so it can be passed down to OTP and NewPassword,
-// which both need it for their API calls.
+// "email" and "verificationToken" are stored here so they can be passed down
+// to OTP and NewPassword components.
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
 
     const [step, setStep] = useState(0);
     const [email, setEmail] = useState('');
+    // FIX #1: Add verificationToken state
+    const [verificationToken, setVerificationToken] = useState('');
 
     // Each step has its own heading and subtitle shown at the top of the card.
     const stepMeta = [
@@ -647,6 +660,12 @@ const ForgotPasswordPage = () => {
     function handleEmailDone(submittedEmail) {
         setEmail(submittedEmail);
         setStep(1);
+    }
+
+    // FIX #1: Handler for OTP done - now receives verification token
+    function handleOtpDone(token) {
+        setVerificationToken(token);
+        setStep(2);
     }
 
     //Handler: go back one step
@@ -706,10 +725,16 @@ const ForgotPasswordPage = () => {
                         <Email onNext={handleEmailDone} />
                     )}
                     {step === 1 && (
-                        <OTP email={email} onNext={function () { setStep(2); }} />
+                        // FIX #1: Pass OTP handler that receives token
+                        <OTP email={email} onNext={handleOtpDone} />
                     )}
                     {step === 2 && (
-                        <NewPassword email={email} onDone={function () { setStep(3); }} />
+                        // FIX #1: Pass verification token to NewPassword
+                        <NewPassword 
+                            email={email} 
+                            verificationToken={verificationToken}
+                            onDone={function () { setStep(3); }} 
+                        />
                     )}
 
                 </div>

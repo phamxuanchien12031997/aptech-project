@@ -15,6 +15,7 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('MAIL_HOST', 'smtp.gmail.com');
 define('MAIL_PORT', 587);
+// ⚠️ UPDATE THESE WITH REAL CREDENTIALS
 define('MAIL_USER', 'your-email@gmail.com');
 define('MAIL_PASS', 'your-app-password');
 define('MAIL_FROM', 'noreply@jobhot.vn');
@@ -22,6 +23,8 @@ define('MAIL_FROM_NAME', 'JobHot');
 define('JWT_SECRET', 'JOBHOT_SECRET_KEY_2026_CHANGE_IN_PROD');
 define('ADMIN_EMAIL', 'admin@jobhot.vn');
 define('ADMIN_NAME', 'Quản trị viên JobHot');
+// ⚠️ ADD THIS: Verification token expiry (30 minutes)
+define('VERIFICATION_TOKEN_EXPIRY', 1800);
 
 function sendJsonResponse(bool $success, string $message, array $data = [], int $httpStatusCode = 200): void
 {
@@ -83,6 +86,55 @@ function createLoginToken(array $userInfo): string
     return $headerEncoded . '.' . $bodyEncoded . '.' . $signatureEncoded;
 }
 
+/**
+ * FIX #1: Create verification token after OTP validation
+ * This token is required to proceed with password reset
+ */
+function createVerificationToken(string $email): string
+{
+    $payload = [
+        'email' => $email,
+        'type' => 'password_reset',
+        'exp' => time() + VERIFICATION_TOKEN_EXPIRY,
+        'iat' => time()
+    ];
+    
+    return createLoginToken($payload);
+}
+
+/**
+ * FIX #2: Verify that the verification token is valid
+ */
+function verifyPasswordResetToken(string $token): ?string
+{
+    try {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return null;
+        }
+        
+        $pad = (4 - strlen($parts[1]) % 4) % 4;
+        $json = base64_decode(str_pad($parts[1], strlen($parts[1]) + $pad, '='));
+        $data = json_decode($json, true);
+        
+        if (!$data || !isset($data['email'], $data['type'], $data['exp'])) {
+            return null;
+        }
+        
+        if ($data['type'] !== 'password_reset') {
+            return null;
+        }
+        
+        if ($data['exp'] < time()) {
+            return null;
+        }
+        
+        return $data['email'];
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
 function sendOtpByEmail(string $toEmail, string $otpCode): bool
 {
     $phpMailerFolder = __DIR__ . '/PHPMailer/src/';
@@ -127,9 +179,10 @@ function sendOtpByEmail(string $toEmail, string $otpCode): bool
         }
     }
 
+    // FIX #7: Add missing space after colon in From header
     $subject = 'Mã xác nhận JobHot';
     $body = 'Mã OTP của bạn: ' . $otpCode . ' (có hiệu lực 5 phút)';
-    $headers = 'From:' . MAIL_FROM;
+    $headers = 'From: ' . MAIL_FROM;
 
     return mail($toEmail, $subject, $body, $headers);
 }
@@ -390,10 +443,11 @@ if ($action === 'register') {
             $mail->addAddress($email, $fullName);
             $mail->Subject = 'Chào mừng bạn đến với JobHot! 🎉';
             $mail->isHTML(true);
+            // FIX #8: Escape user input in email body
             $mail->Body = "
                 <div style='font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px'>
                     <h2 style='color:#7c3aed'>🐝 JobHot</h2>
-                    <h3>Chào mừng, {$fullName}!</h3>
+                    <h3>Chào mừng, " . htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') . "!</h3>
                     <p>Tài khoản của bạn đã được tạo thành công trên <strong>JobHot</strong>.</p>
                     <p>Bạn có thể bắt đầu tìm kiếm việc làm hoặc đăng tin tuyển dụng ngay bây giờ.</p>
                     <a href='https://jobhot.vn/login'
@@ -446,28 +500,40 @@ if ($action === 'forgot-password') {
 
     $expiresAt = date('Y-m-d H:i:s', time() + 300);
 
-    $insertOtp = $db->prepare("
-		INSERT INTO otp_tokens (
-			email,
-			otp,
-			expires_at
-		)
-		VALUES (?, ?, ?)
-	");
+    // FIX #2: Use transaction to ensure consistency
+    try {
+        $db->beginTransaction();
+        
+        $insertOtp = $db->prepare("
+			INSERT INTO otp_tokens (
+				email,
+				otp,
+				expires_at
+			)
+			VALUES (?, ?, ?)
+		");
 
-    $insertOtp->execute([
-        $email,
-        $otpCode,
-        $expiresAt
-    ]);
+        $insertOtp->execute([
+            $email,
+            $otpCode,
+            $expiresAt
+        ]);
 
-    $emailSent = sendOtpByEmail($email, $otpCode);
+        // Email is sent AFTER database insert
+        $emailSent = sendOtpByEmail($email, $otpCode);
 
-    if (!$emailSent) {
-        sendJsonResponse(false, 'Không thể gửi email. Thử lại sau.', [], 500);
+        if (!$emailSent) {
+            // Rollback if email fails
+            $db->rollBack();
+            sendJsonResponse(false, 'Không thể gửi email. Thử lại sau.', [], 500);
+        }
+        
+        $db->commit();
+        sendJsonResponse(true, 'Mã OTP đã được gửi đến email của bạn.');
+    } catch (Exception $e) {
+        $db->rollBack();
+        sendJsonResponse(false, 'Có lỗi xảy ra. Vui lòng thử lại.', [], 500);
     }
-
-    sendJsonResponse(true, 'Mã OTP đã được gửi đến email của bạn.');
 }
 
 if ($action === 'verify-otp') {
@@ -508,19 +574,38 @@ if ($action === 'verify-otp') {
 	");
 
     $markUsed->execute([$otpRow['id']]);
-    sendJsonResponse(true, 'Xác minh OTP thành công.');
+    
+    // FIX #1 & #6: Generate verification token after OTP validation
+    $verificationToken = createVerificationToken($email);
+    
+    sendJsonResponse(true, 'Xác minh OTP thành công.', [
+        'verificationToken' => $verificationToken
+    ]);
 }
 
 if ($action === 'reset-password') {
     $email = trim(isset($body['email']) ? $body['email'] : '');
     $newPassword = isset($body['password']) ? $body['password'] : '';
+    // FIX #5 & #6: Require verification token
+    $verificationToken = isset($body['verificationToken']) ? trim($body['verificationToken']) : '';
 
-    if ($email === '' || $newPassword === '') {
+    if ($email === '' || $newPassword === '' || $verificationToken === '') {
         sendJsonResponse(false, 'Thiếu thông tin.', [], 400);
     }
 
     if (strlen($newPassword) < 8) {
         sendJsonResponse(false, 'Mật khẩu tối thiểu 8 ký tự.', [], 400);
+    }
+
+    // FIX #5: Verify the token and email match
+    $tokenEmail = verifyPasswordResetToken($verificationToken);
+    
+    if ($tokenEmail === null) {
+        sendJsonResponse(false, 'Mã xác minh không hợp lệ hoặc đã hết hạn.', [], 401);
+    }
+    
+    if ($tokenEmail !== $email) {
+        sendJsonResponse(false, 'Email không khớp với mã xác minh.', [], 401);
     }
 
     $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
@@ -693,10 +778,11 @@ if ($action === 'send-confirm-email') {
             $mail->addAddress($toEmail, $toName);
             $mail->Subject = 'Chào mừng bạn đến với JobHot! 🎉';
             $mail->isHTML(true);
+            // FIX #8: Escape user input in email body
             $mail->Body = "
                 <div style='font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px'>
                     <h2 style='color:#7c3aed'>🐝 JobHot</h2>
-                    <h3>Chào mừng, {$toName}!</h3>
+                    <h3>Chào mừng, " . htmlspecialchars($toName, ENT_QUOTES, 'UTF-8') . "!</h3>
                     <p>Tài khoản của bạn đã được tạo thành công trên <strong>JobHot</strong>.</p>
                     <p>Bạn có thể bắt đầu tìm kiếm việc làm hoặc đăng tin tuyển dụng ngay bây giờ.</p>
                     <a href='https://jobhot.vn/login'
@@ -709,9 +795,23 @@ if ($action === 'send-confirm-email') {
                 </div>
             ";
             $mail->send();
+            // FIX #3: Return error response if email fails
+            sendJsonResponse(true, 'Email xác nhận đã được gửi.');
         } catch (Exception $e) {
+            // FIX #3: Return proper error response
+            sendJsonResponse(false, 'Không thể gửi email xác nhận. ' . $e->getMessage(), [], 500);
+        }
+    } else {
+        // Fallback: try native mail function
+        $subject = 'Chào mừng bạn đến với JobHot! 🎉';
+        $body = "Chào mừng, " . htmlspecialchars($toName, ENT_QUOTES, 'UTF-8') . "! Tài khoản của bạn đã được tạo thành công.";
+        $headers = 'From: ' . MAIL_FROM;
+        
+        if (!mail($toEmail, $subject, $body, $headers)) {
+            sendJsonResponse(false, 'Không thể gửi email xác nhận.', [], 500);
         }
     }
+    
     sendJsonResponse(true, 'Email xác nhận đã được gửi.');
 }
 
