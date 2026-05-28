@@ -489,20 +489,21 @@ if ($action === 'forgot-password') {
 
     $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-    $expireOldOtps = $db->prepare("
+    $expiresAt = date('Y-m-d H:i:s', time() + 300);
+
+    // FIX #2: Use transaction to ensure consistency
+    // expireOldOtps is INSIDE the transaction so it rolls back if email fails,
+    // keeping the user's previous valid OTP intact.
+    try {
+        $db->beginTransaction();
+
+        $expireOldOtps = $db->prepare("
 		UPDATE otp_tokens
 		SET used = 1
 		WHERE email = ?
 			AND used = 0
 	");
-
-    $expireOldOtps->execute([$email]);
-
-    $expiresAt = date('Y-m-d H:i:s', time() + 300);
-
-    // FIX #2: Use transaction to ensure consistency
-    try {
-        $db->beginTransaction();
+        $expireOldOtps->execute([$email]);
         
         $insertOtp = $db->prepare("
 			INSERT INTO otp_tokens (
