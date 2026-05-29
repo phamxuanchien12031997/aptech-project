@@ -1,423 +1,200 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Logo from '../assets/img/Logo.png';
 
-
-
-
-const CATEGORIES = ["Công nghệ thông tin", "Marketing / PR", "Thiết kế", "Kế toán / Kiểm toán", "Kinh doanh / Bán hàng", "Nhân sự", "Dịch vụ khách hàng"];
-const JOB_TYPES = ["Full-time", "Part-time", "Freelancer", "Thực tập"];
-const LOCATIONS = ["Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ"];
-const EXPERIENCES = ["Không yêu cầu", "Dưới 1 năm", "1-2 năm", "2-3 năm", "3-5 năm", "Trên 5 năm"];
-const COMPANY_SIZES = ["1-10 nhân viên", "10-50 nhân viên", "50-100 nhân viên", "100-500 nhân viên", "Trên 500 nhân viên"];
-
-const STATUS_CONFIG = {
-    new: {
-        label: "Mới",
-        bg: "#eff6ff",
-        color: "#1d4ed8"
-    },
-    reviewing: {
-        label: "Đang xem xét",
-        bg: "#fefce8",
-        color: "#854d0e"
-    },
-    shortlisted: {
-        label: "Tiềm năng",
-        bg: "#f0fdf4",
-        color: "#15803d"
-    },
-    rejected: {
-        label: "Từ chối",
-        bg: "#fff1f2",
-        color: "#be123c"
-    },
-};
-
+// ─── shared style helpers (mirrors Employer.jsx exactly) ────
 const inputStyle = {
-    width: "100%",
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1px solid #e5e7eb",
-    fontSize: 13,
-    outline: "none",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    color: "#111827",
+    width: "100%", padding: "9px 12px", borderRadius: 8,
+    border: "1px solid #e5e7eb", fontSize: 13, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
 };
-
-const textareaStyle = {
-    width: "100%",
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1px solid #e5e7eb",
-    fontSize: 13,
-    outline: "none",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    color: "#111827",
-    resize: "vertical",
-};
-
-const autoSelectStyle = {
-    width: "auto",
-    padding: "9px 12px",
-    borderRadius: 8,
-    border: "1px solid #e5e7eb",
-    fontSize: 13,
-    outline: "none",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    color: "#111827",
-};
-
 const smallSelectStyle = {
-    width: "auto",
-    padding: "6px 10px",
-    borderRadius: 8,
-    border: "1px solid #e5e7eb",
-    fontSize: 12,
-    outline: "none",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    color: "#111827",
+    width: "auto", padding: "6px 10px", borderRadius: 8,
+    border: "1px solid #e5e7eb", fontSize: 12, outline: "none",
+    boxSizing: "border-box", fontFamily: "inherit", color: "#111827",
+    background: "#fff",
 };
-
-const getInitials = (name) => {
-    const words = name.split(" ");
-    const lastTwo = words.slice(-2);
-    const letters = lastTwo.map((word) => {
-        return word[0];
-    });
-    return letters.join("").toUpperCase();
-}
-
-const getDaysLeft = (dateString) => {
-    const deadline = new Date(dateString);
-    const now = new Date();
-    const diff = deadline - now;
-    const days = Math.ceil(diff / 86400000);
-    if (days < 0) {
-        return 0;
-    }
-    return days;
-}
-
-const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("vi-VN");
-}
-
-const AVATAR_COLORS = ["#7c3aed", "#0369a1", "#0f766e", "#b45309", "#be185d", "#6d28d9"];
-
-const getAvatarColor = (name) => {
-    const index = name.charCodeAt(0) % AVATAR_COLORS.length;
-    return AVATAR_COLORS[index];
-}
-
-const getSectionTitle = (text) => {
-    return (
-        <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: 0.5, paddingBottom: 8, borderBottom: "1px solid #f3f4f6" }}>{text}</h3>
-    );
-}
-
-const getFieldLabel = (text) => {
-    return (
-        <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>{text}</label>
-    );
-}
-
-const getJobStatusStyle = (status) => {
-    const base = {
-        fontSize: 11,
-        padding: "3px 8px",
-        borderRadius: 20,
-        fontWeight: 600
-    };
-
-    if (status === "active") {
-        base.background = "#f0fdf4";
-        base.color = "#15803d";
-    } else {
-        base.background = "#f3f4f6";
-        base.color = "#6b7280";
-    }
-
-    return base;
-}
-
-const getJobStatusLabel = (status) => {
-    if (status === "active") {
-        return "Đang tuyển";
-    }
-    return "Đã đóng";
-}
-
-const getToggleButtonLabel = (status) => {
-    if (status === "active") {
-        return "Đóng tin";
-    }
-    return "Mở lại";
-}
-
 const getSidebarTabStyle = (isActive) => {
     const style = {
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "10px 12px",
-        borderRadius: 8,
-        border: "none",
-        cursor: "pointer",
-        textAlign: "left",
-        fontSize: 13.5,
-        marginBottom: 3,
-        transition: "all 0.15s",
+        width: "100%", display: "flex", alignItems: "center", gap: 10,
+        padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+        textAlign: "left", fontSize: 13.5, marginBottom: 3, transition: "all 0.15s",
     };
-
-    if (isActive) {
-        style.fontWeight = 600;
-        style.background = "#f5f3ff";
-        style.color = "#7c3aed";
-    } else {
-        style.fontWeight = 400;
-        style.background = "transparent";
-        style.color = "#374151";
-    }
-
+    if (isActive) { style.fontWeight = 600; style.background = "#f5f3ff"; style.color = "#7c3aed"; }
+    else          { style.fontWeight = 400; style.background = "transparent"; style.color = "#374151"; }
     return style;
-}
-
-const getFilterButtonStyle = (isActive) => {
-    const style = {
-        padding: "7px 16px",
-        borderRadius: 20,
-        fontSize: 13,
-        cursor: "pointer"
-    };
-
-    if (isActive) {
-        style.border = "1px solid #7c3aed";
-        style.background = "#f5f3ff";
-        style.color = "#7c3aed";
-        style.fontWeight = 600;
-    } else {
-        style.border = "1px solid #e5e7eb";
-        style.background = "#fff";
-        style.color = "#6b7280";
-        style.fontWeight = 400;
-    }
-
-    return style;
-}
-
-const getSubmitButtonStyle = (isLoading) => {
-    const style = {
-        flex: 1,
-        padding: "11px",
-        borderRadius: 10,
-        border: "none",
-        color: "#fff",
-        fontSize: 14,
-        fontWeight: 600,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-    };
-
-    if (isLoading) {
-        style.background = "#c4b5fd";
-        style.cursor = "not-allowed";
-    } else {
-        style.background = "#7c3aed";
-        style.cursor = "pointer";
-    }
-
-    return style;
-}
-
+};
 const getMenuToggleButtonStyle = (isOpen) => {
     const style = {
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "8px 10px",
-        borderRadius: 8,
-        cursor: "pointer",
-        transition: "all 0.15s",
+        width: "100%", display: "flex", alignItems: "center", gap: 10,
+        padding: "8px 10px", borderRadius: 8, cursor: "pointer", transition: "all 0.15s",
     };
-
-    if (isOpen) {
-        style.border = "1px solid #e5e7eb";
-        style.background = "#f9fafb";
-    } else {
-        style.border = "1px solid transparent";
-        style.background = "transparent";
-    }
-
+    if (isOpen) { style.border = "1px solid #e5e7eb"; style.background = "#f9fafb"; }
+    else        { style.border = "1px solid transparent"; style.background = "transparent"; }
     return style;
+};
+const getChevronStyle = (isOpen) => ({
+    fontSize: 10, color: "#9ca3af", transition: "transform 0.2s", flexShrink: 0,
+    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+});
+const getSectionTitle = (text) => (
+    <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: 0.5, paddingBottom: 8, borderBottom: "1px solid #f3f4f6" }}>{text}</h3>
+);
+const getFieldLabel = (text) => (
+    <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>{text}</label>
+);
+const getInitials = (name = "") => {
+    const words = name.split(" "); const last = words.slice(-2);
+    return last.map(w => w[0]).join("").toUpperCase();
+};
+const AVATAR_COLORS = ["#7c3aed","#0369a1","#0f766e","#b45309","#be185d","#6d28d9"];
+const getAvatarColor = (name = "") => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+const formatDate = (s) => s ? new Date(s).toLocaleDateString("vi-VN") : "—";
+
+const SpinnerDot = () => (
+    <span style={{ display:"inline-block", width:14, height:14, border:"2px solid rgba(255,255,255,0.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />
+);
+const EmptyState = ({ icon, title, sub }) => (
+    <div style={{ textAlign:"center", padding:"80px 0", color:"#9ca3af" }}>
+        <div style={{ fontSize:48, marginBottom:14 }}>{icon}</div>
+        <div style={{ fontSize:16, fontWeight:600, color:"#374151", marginBottom:6 }}>{title}</div>
+        {sub && <div style={{ fontSize:13 }}>{sub}</div>}
+    </div>
+);
+
+// ─── API helper ──────────────────────────────────────────────
+const API = '/server/index.php';
+function authHeaders() {
+    return { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') };
+}
+async function apiFetch(action, opts = {}) {
+    const method = opts.method || 'GET';
+    const res = await fetch(API + '?action=' + action, {
+        method,
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    return res.json();
 }
 
-const getChevronStyle = (isOpen) => {
-    const style = {
-        fontSize: 10,
-        color: "#9ca3af",
-        transition: "transform 0.2s",
-        flexShrink: 0
-    };
-
-    if (isOpen) {
-        style.transform = "rotate(180deg)";
-    } else {
-        style.transform = "rotate(0deg)";
-    }
-
-    return style;
-}
-
-const Badge = ({ status }) => {
-    let config = STATUS_CONFIG[status];
-
-    if (!config) {
-        config = STATUS_CONFIG.new;
-    }
-
-    const style = {
-        fontSize: 11,
-        padding: "3px 10px",
-        borderRadius: 20,
-        background: config.bg,
-        color: config.color,
-        fontWeight: 600,
-    };
-
-    return <span style={style}>{config.label}</span>;
-}
-
-const EmptyState = ({ icon, title, sub }) => {
+// ─── Toast ───────────────────────────────────────────────────
+const Toast = ({ msg, type }) => {
+    if (!msg) return null;
+    const bg = type === 'error' ? '#ef4444' : '#22c55e';
     return (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "#9ca3af" }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>{icon}</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{title}</div>
-            {sub && <div style={{ fontSize: 13 }}>{sub}</div>}
+        <div style={{ position:"fixed", bottom:24, right:24, zIndex:2000, background:bg, color:"#fff", padding:"12px 20px", borderRadius:10, fontWeight:600, fontSize:13, boxShadow:"0 4px 20px rgba(0,0,0,.15)" }}>
+            {msg}
         </div>
     );
-}
+};
 
-const SpinnerDot = () => {
+// ─── Modal ───────────────────────────────────────────────────
+const Modal = ({ open, title, onClose, children }) => {
+    if (!open) return null;
     return (
-        <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", }} />
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.4)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:16, padding:28, width:480, maxWidth:"95vw", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 8px 40px rgba(0,0,0,.12)" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                    <h3 style={{ margin:0, color:"#111827", fontSize:16, fontWeight:700 }}>{title}</h3>
+                    <button onClick={onClose} style={{ background:"none", border:"none", color:"#9ca3af", fontSize:20, cursor:"pointer", lineHeight:1 }}>✕</button>
+                </div>
+                {children}
+            </div>
+        </div>
     );
-}
+};
 
+// ─── Status badge helpers ────────────────────────────────────
+const jobStatusStyle = (s) => {
+    const base = { fontSize:11, padding:"3px 10px", borderRadius:20, fontWeight:600, whiteSpace:"nowrap" };
+    if (s === 'active')  return { ...base, background:"#f0fdf4", color:"#15803d" };
+    if (s === 'pending') return { ...base, background:"#fefce8", color:"#854d0e" };
+    if (s === 'closed')  return { ...base, background:"#f3f4f6", color:"#6b7280" };
+    return { ...base, background:"#f3f4f6", color:"#6b7280" };
+};
+const jobStatusLabel = (s) => ({ active:"Đang tuyển", pending:"Chờ duyệt", closed:"Đã đóng" }[s] || s);
+const userStatusStyle = (s) => {
+    const base = { fontSize:11, padding:"3px 10px", borderRadius:20, fontWeight:600, whiteSpace:"nowrap" };
+    if (s === 'active') return { ...base, background:"#f0fdf4", color:"#15803d" };
+    return { ...base, background:"#fff1f2", color:"#be123c" };
+};
+const userStatusLabel  = (s) => s === 'active' ? 'Hoạt động' : 'Bị khóa';
+const roleStyle = (r) => {
+    const base = { fontSize:11, padding:"3px 10px", borderRadius:20, fontWeight:600, whiteSpace:"nowrap" };
+    if (r === 'employer') return { ...base, background:"#eff6ff", color:"#1d4ed8" };
+    return { ...base, background:"#f5f3ff", color:"#7c3aed" };
+};
+const roleLabel = (r) => r === 'employer' ? 'Nhà tuyển dụng' : 'Người tìm việc';
+
+// ─── Shared action button style ──────────────────────────────
+const actionBtn = (variant = 'default') => {
+    const base = { fontSize:12, padding:"5px 12px", borderRadius:7, border:"none", cursor:"pointer", fontWeight:600, transition:"opacity .15s" };
+    if (variant === 'primary') return { ...base, background:"#7c3aed", color:"#fff" };
+    if (variant === 'danger')  return { ...base, background:"#fff1f2", color:"#be123c", border:"1px solid #fecdd3" };
+    if (variant === 'warning') return { ...base, background:"#fefce8", color:"#854d0e", border:"1px solid #fde68a" };
+    if (variant === 'success') return { ...base, background:"#f0fdf4", color:"#15803d", border:"1px solid #bbf7d0" };
+    return { ...base, background:"#f3f4f6", color:"#374151", border:"1px solid #e5e7eb" };
+};
+
+// ─── Sidebar ─────────────────────────────────────────────────
 const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef();
+    const adminName  = localStorage.getItem('name')  || 'Quản trị viên';
+    const adminEmail = localStorage.getItem('email') || 'admin@jobhot.vn';
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
     }, []);
 
     const tabs = [
-        {
-            id: "overview",
-            icon: "📊",
-            label: "Tổng quan"
-        },
-        {
-            id: "jobs",
-            icon: "📋",
-            label: "Quản lý tin đăng"
-        },
-        {
-            id: "candidates",
-            icon: "👥",
-            label: "Quản lý ứng viên"
-        },
-        {
-            id: "talent",
-            icon: "🔍",
-            label: "Tìm ứng viên"
-        },
-        {
-            id: "company",
-            icon: "🏢",
-            label: "Thông tin công ty"
-        },
+        { id:"overview",    icon:"📊", label:"Tổng quan" },
+        { id:"users",       icon:"👥", label:"Quản lý người dùng" },
+        { id:"jobs",        icon:"📋", label:"Quản lý bài đăng" },
+        { id:"categories",  icon:"🗂️", label:"Quản lý danh mục" },
     ];
 
-    const handleMenuToggle = () => {
-        if (menuOpen) {
-            setMenuOpen(false);
-        } else {
-            setMenuOpen(true);
-        }
-    }
-
-    const handleGoToCompany = () => {
-        setActiveTab("company");
-        setMenuOpen(false);
-    }
-
-    const handleLogout = () => {
-        setMenuOpen(false);
-        onLogout();
-    }
-
     return (
-        <aside style={{ width: 224, flexShrink: 0, background: "#fff", borderRight: "1px solid #e5e7eb", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-            <div style={{ padding: "20px 20px 12px", borderBottom: "1px solid #f3f4f6" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <img src={Logo} alt="JobHot Logo" style={{ height: 32, width: "auto" }} />
-                    <div style={{ fontWeight: 700, fontSize: 20, color: "#7c3aed", letterSpacing: -0.5 }}>JobHot</div>
+        <aside style={{ width:224, flexShrink:0, background:"#fff", borderRight:"1px solid #e5e7eb", display:"flex", flexDirection:"column", minHeight:"100vh" }}>
+            <div style={{ padding:"20px 20px 12px", borderBottom:"1px solid #f3f4f6" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                    <img src={Logo} alt="JobHot Logo" style={{ height:32, width:"auto" }} />
+                    <div style={{ fontWeight:700, fontSize:20, color:"#7c3aed", letterSpacing:-0.5 }}>JobHot</div>
                 </div>
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>Trang nhà tuyển dụng</div>
+                <div style={{ fontSize:11, color:"#9ca3af", marginTop:2 }}>Trang quản trị viên</div>
             </div>
 
-            <nav style={{ flex: 1, padding: "12px 12px" }}>
-                {tabs.map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    return (
-                        <button key={tab.id} onClick={() => { setActiveTab(tab.id); }} style={getSidebarTabStyle(isActive)}>
-                            <span style={{ fontSize: 15 }}>{tab.icon}</span>
-                            {tab.label}
-                        </button>
-                    );
-                })}
+            <nav style={{ flex:1, padding:"12px 12px" }}>
+                {tabs.map(tab => (
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={getSidebarTabStyle(activeTab === tab.id)}>
+                        <span style={{ fontSize:15 }}>{tab.icon}</span>{tab.label}
+                    </button>
+                ))}
             </nav>
 
-            <div style={{ padding: "12px 12px", borderTop: "1px solid #f3f4f6", position: "relative" }} ref={menuRef}>
-
-                <button onClick={handleMenuToggle} style={getMenuToggleButtonStyle(menuOpen)}>
-                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>CT</div>
-                    <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Công ty JobHot</div>
-                        <div style={{ fontSize: 11, color: "#9ca3af" }}>Nhà tuyển dụng</div>
+            <div style={{ padding:"12px 12px", borderTop:"1px solid #f3f4f6", position:"relative" }} ref={menuRef}>
+                <button onClick={() => setMenuOpen(o => !o)} style={getMenuToggleButtonStyle(menuOpen)}>
+                    <div style={{ width:34, height:34, borderRadius:"50%", background:"#7c3aed", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:12, fontWeight:700, flexShrink:0 }}>
+                        {getInitials(adminName)}
+                    </div>
+                    <div style={{ flex:1, minWidth:0, textAlign:"left" }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:"#111827", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{adminName}</div>
+                        <div style={{ fontSize:11, color:"#9ca3af" }}>Quản trị viên</div>
                     </div>
                     <span style={getChevronStyle(menuOpen)}>▲</span>
                 </button>
 
                 {menuOpen && (
-                    <div style={{ position: "absolute", bottom: "calc(100% - 8px)", left: 12, right: 12, background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", overflow: "hidden", zIndex: 50 }}>
-                        <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #f3f4f6" }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>Công ty JobHot</div>
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>hr@jobhot.vn</div>
+                    <div style={{ position:"absolute", bottom:"calc(100% - 8px)", left:12, right:12, background:"#fff", borderRadius:10, border:"1px solid #e5e7eb", boxShadow:"0 -4px 20px rgba(0,0,0,0.08)", overflow:"hidden", zIndex:50 }}>
+                        <div style={{ padding:"10px 14px 8px", borderBottom:"1px solid #f3f4f6" }}>
+                            <div style={{ fontSize:12, fontWeight:600, color:"#374151" }}>{adminName}</div>
+                            <div style={{ fontSize:11, color:"#9ca3af", marginTop:1 }}>{adminEmail}</div>
                         </div>
-
-                        <div style={{ padding: "6px" }}>
-                            <button onClick={handleGoToCompany} style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: "#374151", textAlign: "left" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#f5f3ff"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
-                                <span>🏢</span> Thông tin công ty
-                            </button>
-                            <button onClick={handleLogout} style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 10px", borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: "#ef4444", textAlign: "left" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#fff1f2"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
+                        <div style={{ padding:"6px" }}>
+                            <button onClick={onLogout} style={{ width:"100%", display:"flex", alignItems:"center", gap:9, padding:"9px 10px", borderRadius:7, border:"none", background:"transparent", cursor:"pointer", fontSize:13, color:"#ef4444", textAlign:"left" }}
+                                onMouseEnter={e => e.currentTarget.style.background="#fff1f2"}
+                                onMouseLeave={e => e.currentTarget.style.background="transparent"}>
                                 <span>🚪</span> Đăng xuất
                             </button>
                         </div>
@@ -426,1279 +203,541 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
             </div>
         </aside>
     );
-}
+};
 
-const OverviewTab = ({ jobs, candidates, setActiveTab }) => {
-
-    const activeJobCount = jobs.filter((j) => {
-        return j.status === "active";
-    }).length;
-
-    const totalCandidates = candidates.length;
-    const newCandidates = candidates.filter((c) => {
-        return c.status === "new";
-    }).length;
-
-    const shortlistedCount = candidates.filter((c) => {
-        return c.status === "shortlisted";
-    }).length;
-
-    const stats = [
-        {
-            label: "Tin đang tuyển",
-            value: activeJobCount,
-            icon: "📋",
-            color: "#7c3aed",
-            bg: "#f5f3ff"
-        },
-        {
-            label: "Tổng ứng viên",
-            value: totalCandidates,
-            icon: "👥",
-            color: "#0369a1",
-            bg: "#eff6ff"
-        },
-        {
-            label: "Ứng viên mới",
-            value: newCandidates,
-            icon: "🆕",
-            color: "#b45309",
-            bg: "#fefce8"
-        },
-        {
-            label: "Tiềm năng",
-            value: shortlistedCount,
-            icon: "⭐",
-            color: "#15803d",
-            bg: "#f0fdf4"
-        },
+// ─── OverviewTab ─────────────────────────────────────────────
+const OverviewTab = ({ stats, catStats, setActiveTab }) => {
+    const cards = [
+        { label:"Tổng bài đăng",    value:stats.totalJobs,         icon:"💼", color:"#7c3aed", bg:"#f5f3ff" },
+        { label:"Đang tuyển",        value:stats.activeJobs,        icon:"✅", color:"#15803d", bg:"#f0fdf4" },
+        { label:"Chờ duyệt",         value:stats.pendingJobs,       icon:"⏳", color:"#854d0e", bg:"#fefce8" },
+        { label:"Tổng người dùng",   value:stats.totalUsers,        icon:"👥", color:"#0369a1", bg:"#eff6ff" },
+        { label:"Nhà tuyển dụng",    value:stats.totalEmployers,    icon:"🏢", color:"#7c3aed", bg:"#f5f3ff" },
+        { label:"Người tìm việc",    value:stats.totalSeekers,      icon:"🔍", color:"#15803d", bg:"#f0fdf4" },
+        { label:"Danh mục",          value:stats.totalCategories,   icon:"🗂️", color:"#854d0e", bg:"#fefce8" },
+        { label:"Lượt ứng tuyển",    value:stats.totalApplications, icon:"📨", color:"#0369a1", bg:"#eff6ff" },
     ];
-
-    const recentJobs = [];
-    for (let i = 0; i < 3 && i < jobs.length; i++) {
-        recentJobs.push(jobs[i]);
-    }
-
-    const recentCandidates = [];
-    for (let i = 0; i < 4 && i < candidates.length; i++) {
-        recentCandidates.push(candidates[i]);
-    }
+    const maxCat = Math.max(...(catStats || []).map(c => c.job_count), 1);
 
     return (
-        <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Tổng quan</h2>
-            <p style={{ margin: "0 0 24px", fontSize: 13, color: "#6b7280" }}>Chào mừng trở lại! Đây là tình hình tuyển dụng hôm nay.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
-                {stats.map((stat) => {
-                    return (
-                        <div key={stat.label} style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "18px 20px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                <div>
-                                    <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6, fontWeight: 500 }}>{stat.label}</div>
-                                    <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                                </div>
-                                <div style={{ width: 40, height: 40, borderRadius: 10, background: stat.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                                    {stat.icon}
-                                </div>
+        <div style={{ flex:1, overflowY:"auto", padding:24 }}>
+            <h2 style={{ margin:"0 0 4px", fontSize:20, fontWeight:700, color:"#111827" }}>Tổng quan</h2>
+            <p style={{ margin:"0 0 24px", fontSize:13, color:"#6b7280" }}>Chào mừng trở lại! Đây là tình hình hệ thống hôm nay.</p>
+
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:28 }}>
+                {cards.map(c => (
+                    <div key={c.label} style={{ background:"#fff", borderRadius:12, border:"1px solid #e5e7eb", padding:"18px 20px" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                            <div>
+                                <div style={{ fontSize:11, color:"#6b7280", marginBottom:6, fontWeight:500 }}>{c.label}</div>
+                                <div style={{ fontSize:28, fontWeight:700, color:c.color }}>{c.value ?? '—'}</div>
                             </div>
+                            <div style={{ width:40, height:40, borderRadius:10, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{c.icon}</div>
                         </div>
-                    );
-                })}
+                    </div>
+                ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "20px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>Tin tuyển dụng gần đây</h3>
-                        <button onClick={() => { setActiveTab("jobs"); }} style={{ fontSize: 12, color: "#7c3aed", border: "none", background: "none", cursor: "pointer", fontWeight: 500 }}>
-                            Xem tất cả →
-                        </button>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+                {/* Bar chart */}
+                <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e5e7eb", padding:20 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                        <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:"#111827" }}>Bài đăng theo danh mục</h3>
+                        <button onClick={() => setActiveTab('categories')} style={{ fontSize:12, color:"#7c3aed", border:"none", background:"none", cursor:"pointer", fontWeight:500 }}>Xem tất cả →</button>
                     </div>
-                    {recentJobs.map((job) => {
-                        return (
-                            <div key={job.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f9fafb" }}>
-                                <div>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{job.title}</div>
-                                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{job.applicants} ứng viên · {formatDate(job.posted)}</div>
-                                </div>
-                                <span style={getJobStatusStyle(job.status)}>
-                                    {getJobStatusLabel(job.status)}
-                                </span>
+                    {(catStats || []).slice(0, 7).map(c => (
+                        <div key={c.name} style={{ marginBottom:10 }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                                <span style={{ fontSize:12, color:"#374151" }}>{c.icon} {c.name}</span>
+                                <span style={{ fontSize:12, fontWeight:700, color:"#7c3aed" }}>{c.job_count}</span>
                             </div>
-                        );
-                    })}
+                            <div style={{ height:6, background:"#f3f4f6", borderRadius:3, overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${(c.job_count/maxCat)*100}%`, background:"#7c3aed", borderRadius:3, transition:"width .5s ease" }} />
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
-                {/* Recent candidates panel */}
-                <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "20px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#111827" }}>Ứng viên mới nhất</h3>
-                        <button onClick={function () { setActiveTab("candidates"); }} style={{ fontSize: 12, color: "#7c3aed", border: "none", background: "none", cursor: "pointer", fontWeight: 500 }}>
-                            Xem tất cả →
-                        </button>
-                    </div>
-                    {recentCandidates.map(function (candidate) {
-                        return (
-                            <div key={candidate.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #f9fafb" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: getAvatarColor(candidate.name), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-                                        {getInitials(candidate.name)}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{candidate.name}</div>
-                                        <div style={{ fontSize: 11, color: "#9ca3af" }}>{candidate.position}</div>
-                                    </div>
-                                </div>
-                                <Badge status={candidate.status} />
+                {/* Quick links */}
+                <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e5e7eb", padding:20 }}>
+                    <h3 style={{ margin:"0 0 16px", fontSize:14, fontWeight:700, color:"#111827" }}>Thao tác nhanh</h3>
+                    {[
+                        { icon:"👥", label:"Quản lý người dùng",   sub:"Xem, khóa, xóa tài khoản",    tab:"users" },
+                        { icon:"📋", label:"Quản lý bài đăng",     sub:"Duyệt, đóng, xóa bài đăng",   tab:"jobs" },
+                        { icon:"🗂️", label:"Quản lý danh mục",     sub:"Thêm, sửa, xóa danh mục",     tab:"categories" },
+                    ].map(q => (
+                        <button key={q.tab} onClick={() => setActiveTab(q.tab)}
+                            style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"12px 10px", borderRadius:9, border:"none", background:"transparent", cursor:"pointer", textAlign:"left", marginBottom:4 }}
+                            onMouseEnter={e => e.currentTarget.style.background="#f5f3ff"}
+                            onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                            <div style={{ width:38, height:38, borderRadius:9, background:"#f5f3ff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{q.icon}</div>
+                            <div>
+                                <div style={{ fontSize:13, fontWeight:600, color:"#111827" }}>{q.label}</div>
+                                <div style={{ fontSize:11, color:"#9ca3af" }}>{q.sub}</div>
                             </div>
-                        );
-                    })}
+                            <span style={{ marginLeft:"auto", color:"#9ca3af", fontSize:14 }}>›</span>
+                        </button>
+                    ))}
                 </div>
-
             </div>
         </div>
     );
-}
+};
 
+// ─── UsersTab ─────────────────────────────────────────────────
+const UsersTab = ({ toast }) => {
+    const [users,      setUsers]      = useState([]);
+    const [loading,    setLoading]    = useState(true);
+    const [search,     setSearch]     = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [editUser,   setEditUser]   = useState(null);
+    const [editForm,   setEditForm]   = useState({});
+    const [saving,     setSaving]     = useState(false);
+    const [confirmDel, setConfirmDel] = useState(null);
 
-//  JobFormModal 
-// A modal for creating or editing a job listing.
-// Clicking the dark backdrop also closes the modal.
-// Props:
-//   job     - the job object to edit, or null when creating a new one
-//   onClose - called when the modal should be dismissed
-//   onSave  - called with the finished job object when the form is saved
-
-function JobFormModal({ job, onClose, onSave }) {
-
-    // If a job was passed in, start with its values; otherwise use empty strings.
-    let initialTitle = "";
-    let initialDescription = "";
-    let initialRequirements = "";
-    let initialSalary = "";
-    let initialLocation = "Hà Nội";
-    let initialCategory = "Công nghệ thông tin";
-    let initialType = "Full-time";
-    let initialDeadline = "";
-
-    if (job) {
-        initialTitle = job.title;
-        initialDescription = job.description;
-        initialRequirements = job.requirements;
-        initialSalary = job.salary;
-        initialLocation = job.location;
-        initialCategory = job.category;
-        initialType = job.type;
-        initialDeadline = job.deadline;
-    }
-
-    const [title, setTitle] = useState(initialTitle);
-    const [description, setDescription] = useState(initialDescription);
-    const [requirements, setRequirements] = useState(initialRequirements);
-    const [salary, setSalary] = useState(initialSalary);
-    const [location, setLocation] = useState(initialLocation);
-    const [category, setCategory] = useState(initialCategory);
-    const [type, setType] = useState(initialType);
-    const [deadline, setDeadline] = useState(initialDeadline);
-    const [loading, setLoading] = useState(false);
-
-    // Simulate a save delay then call onSave with the complete job object.
-    // For editing: keeps the existing id, status, applicants, posted date.
-    // For creating: generates a new id and sets defaults.
-    async function handleSave(event) {
-        event.preventDefault();
+    const load = useCallback(() => {
         setLoading(true);
+        apiFetch('admin-get-users').then(r => { if (r.success) setUsers(r.data.users || []); setLoading(false); });
+    }, []);
+    useEffect(load, [load]);
 
-        // Simulate network delay (remove when connected to a real backend)
-        await new Promise(function (resolve) { setTimeout(resolve, 900); });
+    const filtered = users.filter(u => {
+        const q = search.toLowerCase();
+        return (u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q))
+            && (roleFilter === 'all' || u.role === roleFilter);
+    });
 
-        let savedJob;
-
-        if (job) {
-            // Editing an existing job — preserve its metadata fields
-            savedJob = {
-                id: job.id, status: job.status,
-                applicants: job.applicants, posted: job.posted,
-                title: title, description: description,
-                requirements: requirements, salary: salary,
-                location: location, category: category,
-                type: type, deadline: deadline,
-            };
-        } else {
-            // Creating a new job — generate id and set defaults
-            savedJob = {
-                id: "JP" + Date.now(), status: "active",
-                applicants: 0, posted: new Date().toISOString().slice(0, 10),
-                title: title, description: description,
-                requirements: requirements, salary: salary,
-                location: location, category: category,
-                type: type, deadline: deadline,
-            };
-        }
-
-        onSave(savedJob);
-        setLoading(false);
-        onClose();
+    async function toggleLock(u) {
+        const s = u.status === 'active' ? 'locked' : 'active';
+        const r = await apiFetch('admin-update-user', { method:'POST', body:{ id:u.id, status:s } });
+        if (r.success) { toast(s === 'locked' ? '🔒 Đã khóa tài khoản' : '🔓 Đã mở khóa', 'success'); load(); }
+        else toast(r.message || 'Lỗi', 'error');
     }
-
-    // Closes the modal when the user clicks the dark background area,
-    // but not when they click inside the white dialog box.
-    function handleBackdropClick(event) {
-        if (event.target === event.currentTarget) {
-            onClose();
-        }
+    async function deleteUser() {
+        const r = await apiFetch('admin-delete-user', { method:'POST', body:{ id:confirmDel.id } });
+        if (r.success) { toast('🗑️ Đã xóa người dùng', 'success'); setConfirmDel(null); load(); }
+        else toast(r.message || 'Lỗi', 'error');
     }
-
-    // Xác định tiêu đề modal theo chế độ tạo mới hay chỉnh sửa
-    let modalTitle;
-    if (job) {
-        modalTitle = "Chỉnh sửa tin tuyển dụng";
-    } else {
-        modalTitle = "Tạo tin tuyển dụng mới";
-    }
-
-    // Xác định chữ nút lưu theo trạng thái loading và chế độ
-    let saveButtonLabel;
-    if (loading) {
-        saveButtonLabel = "Đang lưu...";
-    } else if (job) {
-        saveButtonLabel = "Lưu thay đổi";
-    } else {
-        saveButtonLabel = "Đăng tuyển dụng";
+    async function saveEdit() {
+        setSaving(true);
+        const r = await apiFetch('admin-update-user', { method:'POST', body:{ id:editUser.id, ...editForm } });
+        setSaving(false);
+        if (r.success) { toast('✅ Đã cập nhật', 'success'); setEditUser(null); load(); }
+        else toast(r.message || 'Lỗi', 'error');
     }
 
     return (
-        <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-            onClick={handleBackdropClick}
-        >
-            <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-
-                {/* Modal header */}
-                <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
-                    <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}>{modalTitle}</h2>
-                    <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#9ca3af" }}>✕</button>
-                </div>
-
-                {/* Form body */}
-                <form onSubmit={handleSave} style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-
-                    {/* Job title */}
-                    <div>
-                        {getFieldLabel("Tiêu đề công việc *")}
-                        <input value={title} onChange={function (e) { setTitle(e.target.value); }} required placeholder="VD: Lập Trình Viên Full Stack" style={inputStyle} />
-                    </div>
-
-                    {/* Salary + Location + Category + Type grid */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                        <div>
-                            {getFieldLabel("Mức lương")}
-                            <input value={salary} onChange={function (e) { setSalary(e.target.value); }} placeholder="VD: 20-35 triệu" style={inputStyle} />
-                        </div>
-                        <div>
-                            {getFieldLabel("Địa điểm")}
-                            <select value={location} onChange={function (e) { setLocation(e.target.value); }} style={inputStyle}>
-                                {LOCATIONS.map(function (loc) { return <option key={loc}>{loc}</option>; })}
-                            </select>
-                        </div>
-                        <div>
-                            {getFieldLabel("Danh mục (tuỳ chọn)")}
-                            <select value={category} onChange={function (e) { setCategory(e.target.value); }} style={inputStyle}>
-                                {CATEGORIES.map(function (cat) { return <option key={cat}>{cat}</option>; })}
-                            </select>
-                        </div>
-                        <div>
-                            {getFieldLabel("Loại công việc")}
-                            <select value={type} onChange={function (e) { setType(e.target.value); }} style={inputStyle}>
-                                {JOB_TYPES.map(function (t) { return <option key={t}>{t}</option>; })}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Deadline */}
-                    <div>
-                        {getFieldLabel("Deadline")}
-                        <input type="date" value={deadline} onChange={function (e) { setDeadline(e.target.value); }} style={inputStyle} />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        {getFieldLabel("Mô tả công việc *")}
-                        <textarea value={description} onChange={function (e) { setDescription(e.target.value); }} required rows={5} placeholder="Mô tả chi tiết về công việc, trách nhiệm..." style={textareaStyle} />
-                    </div>
-
-                    {/* Requirements */}
-                    <div>
-                        {getFieldLabel("Yêu cầu kỹ năng *")}
-                        <textarea value={requirements} onChange={function (e) { setRequirements(e.target.value); }} required rows={4} placeholder="Liệt kê các yêu cầu (mỗi yêu cầu một dòng)..." style={textareaStyle} />
-                    </div>
-
-                    {/* Save + Cancel buttons */}
-                    <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
-                        <button type="submit" disabled={loading} style={getSubmitButtonStyle(loading)}>
-                            {loading && <SpinnerDot />}
-                            {saveButtonLabel}
-                        </button>
-                        <button type="button" onClick={onClose} style={{ padding: "11px 20px", borderRadius: 10, border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: 14, cursor: "pointer" }}>
-                            Huỷ
-                        </button>
-                    </div>
-
-                </form>
-            </div>
-        </div>
-    );
-}
-
-//  DeleteModal 
-// A confirmation dialog shown before permanently deleting a job.
-// Props:
-//   job       - the job about to be deleted (used to show its title)
-//   onConfirm - called when the user clicks the red "Xoá" button
-//   onClose   - called when the user cancels
-
-function DeleteModal({ job, onConfirm, onClose }) {
-
-    function handleBackdropClick(event) {
-        if (event.target === event.currentTarget) {
-            onClose();
-        }
-    }
-
-    // Show "N/A" if somehow no job is passed
-    let jobTitle = "N/A";
-    if (job && job.title) {
-        jobTitle = job.title;
-    }
-
-    return (
-        <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-            onClick={handleBackdropClick}
-        >
-            <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 420, padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", textAlign: "center" }}>
-                <div style={{ fontSize: 44, marginBottom: 14 }}>🗑️</div>
-                <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#111827" }}>Xoá tin tuyển dụng?</h2>
-                <p style={{ margin: "0 0 24px", fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
-                    Bạn sắp xoá <strong>"{jobTitle}"</strong>. Hành động này không thể hoàn tác.
-                </p>
-                <div style={{ display: "flex", gap: 10 }}>
-                    <button onClick={onClose} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: 14, cursor: "pointer" }}>Huỷ</button>
-                    <button onClick={onConfirm} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: "#ef4444", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Xoá</button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-//  JobsTab 
-// Lists all job postings with filter buttons and per-job action buttons.
-// Props:
-//   jobs    - the jobs array from root state
-//   setJobs - setter to update the jobs array
-
-function JobsTab({ jobs, setJobs }) {
-    const [showForm, setShowForm] = useState(false);
-    const [editJob, setEditJob] = useState(null);   // null = create new
-    const [deleteJob, setDeleteJob] = useState(null);   // null = no pending delete
-    const [filter, setFilter] = useState("all");  // "all" | "active" | "closed"
-
-    // Filter the jobs list
-    const filteredJobs = [];
-    for (let i = 0; i < jobs.length; i++) {
-        const job = jobs[i];
-
-        if (filter === "all") {
-            filteredJobs.push(job);
-        } else if (job.status === filter) {
-            filteredJobs.push(job);
-        }
-    }
-
-    // Called by JobFormModal when the user saves.
-    // If the job already exists (matched by id), replace it; otherwise prepend it.
-    function handleSave(savedJob) {
-        let exists = false;
-        for (let i = 0; i < jobs.length; i++) {
-            if (jobs[i].id === savedJob.id) {
-                exists = true;
-                break;
-            }
-        }
-
-        if (exists) {
-            // Replace the existing job
-            const updated = [];
-            for (let i = 0; i < jobs.length; i++) {
-                if (jobs[i].id === savedJob.id) {
-                    updated.push(savedJob);
-                } else {
-                    updated.push(jobs[i]);
-                }
-            }
-            setJobs(updated);
-        } else {
-            // Prepend the new job
-            const updated = [savedJob];
-            for (let i = 0; i < jobs.length; i++) {
-                updated.push(jobs[i]);
-            }
-            setJobs(updated);
-        }
-    }
-
-    // Removes the job currently stored in deleteJob from the list.
-    function handleDelete() {
-        const updated = [];
-        for (let i = 0; i < jobs.length; i++) {
-            if (jobs[i].id !== deleteJob.id) {
-                updated.push(jobs[i]);
-            }
-        }
-        setJobs(updated);
-        setDeleteJob(null);
-    }
-
-    // Flips a job between "active" and "closed".
-    function handleToggleStatus(id) {
-        const updated = [];
-
-        for (let i = 0; i < jobs.length; i++) {
-            const job = jobs[i];
-
-            if (job.id !== id) {
-                updated.push(job);
-            } else {
-                // Determine the new status
-                let newStatus;
-                if (job.status === "active") {
-                    newStatus = "closed";
-                } else {
-                    newStatus = "active";
-                }
-
-                // Build updated job object field by field (no spread)
-                updated.push({
-                    id: job.id, title: job.title, description: job.description,
-                    requirements: job.requirements, salary: job.salary,
-                    location: job.location, category: job.category, type: job.type,
-                    deadline: job.deadline, posted: job.posted, applicants: job.applicants,
-                    status: newStatus,
-                });
-            }
-        }
-
-        setJobs(updated);
-    }
-
-    // Opens the form modal in "create new" mode.
-    function handleOpenCreate() {
-        setEditJob(null);
-        setShowForm(true);
-    }
-
-    // Opens the form modal in "edit" mode for the given job.
-    function handleOpenEdit(job) {
-        setEditJob(job);
-        setShowForm(true);
-    }
-
-    const filterOptions = [
-        { value: "all", label: "Tất cả" },
-        { value: "active", label: "Đang tuyển" },
-        { value: "closed", label: "Đã đóng" },
-    ];
-
-    return (
-        <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
-
-            {/* Tab header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div style={{ flex:1, overflowY:"auto", padding:24 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
                 <div>
-                    <h2 style={{ margin: "0 0 2px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Quản lý tin đăng</h2>
-                    <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>{jobs.length} tin tuyển dụng</p>
-                </div>
-                <button onClick={handleOpenCreate} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 10, border: "none", background: "#7c3aed", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                    + Tạo tin mới
-                </button>
-            </div>
-
-            {/* Status filter pills */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-                {filterOptions.map(function (option) {
-                    return (
-                        <button key={option.value} onClick={function () { setFilter(option.value); }} style={getFilterButtonStyle(filter === option.value)}>
-                            {option.label}
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* Job cards list or empty state */}
-            {filteredJobs.length === 0 && (
-                <EmptyState icon="📋" title="Chưa có tin tuyển dụng" sub="Nhấn 'Tạo tin mới' để bắt đầu tuyển dụng" />
-            )}
-
-            {filteredJobs.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {filteredJobs.map(function (job) {
-
-                        // Cắt ngắn mô tả để hiển thị trên card
-                        const shortDescription = job.description.slice(0, 120) + "…";
-
-                        // Xác định ngày deadline hiển thị
-                        let deadlineDisplay = "-";
-                        if (job.deadline) {
-                            deadlineDisplay = formatDate(job.deadline);
-                        }
-
-                        return (
-                            <div key={job.id} style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "18px 20px" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-
-                                    {/* Job info */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-                                            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>{job.title}</h3>
-                                            <span style={getJobStatusStyle(job.status)}>
-                                                {getJobStatusLabel(job.status)}
-                                            </span>
-                                        </div>
-                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                                            <span style={{ fontSize: 12, color: "#6b7280" }}>💰 {job.salary}</span>
-                                            <span style={{ fontSize: 12, color: "#6b7280" }}>📍 {job.location}</span>
-                                            <span style={{ fontSize: 12, color: "#6b7280" }}>💼 {job.type}</span>
-                                            <span style={{ fontSize: 12, color: "#6b7280" }}>📅 Deadline: {deadlineDisplay}</span>
-                                            <span style={{ fontSize: 12, color: "#6b7280" }}>👥 {job.applicants} ứng viên</span>
-                                        </div>
-                                        <p style={{ margin: 0, fontSize: 12, color: "#9ca3af", lineHeight: 1.5 }}>{shortDescription}</p>
-                                    </div>
-
-                                    {/* Action buttons */}
-                                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                                        <button onClick={function () { handleToggleStatus(job.id); }} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: 12, cursor: "pointer" }}>
-                                            {getToggleButtonLabel(job.status)}
-                                        </button>
-                                        <button onClick={function () { handleOpenEdit(job); }} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid #7c3aed", background: "#f5f3ff", color: "#7c3aed", fontSize: 12, cursor: "pointer", fontWeight: 500 }}>
-                                            ✏️ Sửa
-                                        </button>
-                                        <button onClick={function () { setDeleteJob(job); }} style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid #fecaca", background: "#fff1f2", color: "#ef4444", fontSize: 12, cursor: "pointer" }}>
-                                            🗑️
-                                        </button>
-                                    </div>
-
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* Modals — only rendered when their trigger state is set */}
-            {showForm && (
-                <JobFormModal
-                    job={editJob}
-                    onClose={function () { setShowForm(false); }}
-                    onSave={handleSave}
-                />
-            )}
-            {deleteJob && (
-                <DeleteModal
-                    job={deleteJob}
-                    onConfirm={handleDelete}
-                    onClose={function () { setDeleteJob(null); }}
-                />
-            )}
-
-        </div>
-    );
-}
-
-//  CVModal 
-// A modal showing a candidate's full profile.
-// Props:
-//   candidate - the candidate object to display
-//   onClose   - called when the modal should be dismissed
-
-function CVModal({ candidate, onClose }) {
-
-    function handleBackdropClick(event) {
-        if (event.target === event.currentTarget) {
-            onClose();
-        }
-    }
-
-    // Tạo tên file CV từ tên ứng viên (thay dấu cách bằng gạch dưới)
-    const cvFileName = "CV_" + candidate.name.replace(/ /g, "_") + ".pdf";
-
-    // Lấy tối đa 3 kỹ năng đầu để hiển thị trên card
-    const displaySkills = [];
-    for (let i = 0; i < candidate.skills.length && i < 3; i++) {
-        displaySkills.push(candidate.skills[i]);
-    }
-
-    return (
-        <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-            onClick={handleBackdropClick}
-        >
-            <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 560, maxHeight: "88vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-
-                {/* Modal header */}
-                <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between" }}>
-                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>Hồ sơ ứng viên</h2>
-                    <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#9ca3af" }}>✕</button>
-                </div>
-
-                {/* Modal body */}
-                <div style={{ padding: "24px" }}>
-
-                    {/* Avatar + name + position */}
-                    <div style={{ display: "flex", gap: 16, alignItems: "flex-start", marginBottom: 24 }}>
-                        <div style={{ width: 60, height: 60, borderRadius: "50%", background: getAvatarColor(candidate.name), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 20, fontWeight: 700, flexShrink: 0 }}>
-                            {getInitials(candidate.name)}
-                        </div>
-                        <div>
-                            <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "#111827" }}>{candidate.name}</h3>
-                            <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 6 }}>{candidate.position}</div>
-                            <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#9ca3af" }}>
-                                <span>📍 {candidate.location}</span>
-                                <span>⏱ {candidate.experience}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Contact section */}
-                    <div style={{ marginBottom: 20 }}>
-                        {getSectionTitle("Liên hệ")}
-                        <div style={{ display: "flex", gap: 20, fontSize: 13 }}>
-                            <span style={{ color: "#374151" }}>📧 {candidate.email}</span>
-                            <span style={{ color: "#374151" }}>📱 {candidate.phone}</span>
-                        </div>
-                    </div>
-
-                    {/* Bio section */}
-                    <div style={{ marginBottom: 20 }}>
-                        {getSectionTitle("Giới thiệu")}
-                        <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.7 }}>{candidate.bio}</p>
-                    </div>
-
-                    {/* Education section */}
-                    <div style={{ marginBottom: 20 }}>
-                        {getSectionTitle("Học vấn")}
-                        <p style={{ margin: 0, fontSize: 13, color: "#374151" }}>🎓 {candidate.education}</p>
-                    </div>
-
-                    {/* Skills section */}
-                    <div style={{ marginBottom: 24 }}>
-                        {getSectionTitle("Kỹ năng")}
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                            {candidate.skills.map(function (skill) {
-                                return (
-                                    <span key={skill} style={{ fontSize: 12, padding: "4px 12px", borderRadius: 20, background: "#f5f3ff", color: "#7c3aed", fontWeight: 500 }}>
-                                        {skill}
-                                    </span>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* CV download row */}
-                    <div style={{ background: "#f9fafb", borderRadius: 10, padding: "14px 16px", fontSize: 12, color: "#6b7280" }}>
-                        📄 CV đính kèm:{' '}
-                        <span style={{ color: "#7c3aed", fontWeight: 500, cursor: "pointer" }}>{cvFileName}</span>
-                        <span style={{ marginLeft: 8, color: "#9ca3af" }}>(Demo - chưa tích hợp backend)</span>
-                    </div>
-
+                    <h2 style={{ margin:"0 0 4px", fontSize:20, fontWeight:700, color:"#111827" }}>Quản lý người dùng</h2>
+                    <p style={{ margin:0, fontSize:13, color:"#6b7280" }}>{users.length} tài khoản trong hệ thống</p>
                 </div>
             </div>
-        </div>
-    );
-}
 
-//  CandidatesTab 
-// Lists all candidates with filters by job and by status.
-// Props:
-//   candidates    - the candidates array from root state
-//   setCandidates - setter to update a candidate's status
-//   jobs          - used to resolve the job title for each candidate row
-
-function CandidatesTab({ candidates, setCandidates, jobs }) {
-    const [viewCV, setViewCV] = useState(null);    // candidate to show in CVModal, or null
-    const [filterJob, setFilterJob] = useState("all");   // "all" or a job id like "JP001"
-    const [filterStatus, setFilterStatus] = useState("all");   // "all" or a status key
-
-    // Filter the candidates list
-    const filteredCandidates = [];
-    for (let i = 0; i < candidates.length; i++) {
-        const candidate = candidates[i];
-
-        let jobMatch = true;
-        if (filterJob !== "all") {
-            jobMatch = candidate.appliedJob === filterJob;
-        }
-
-        let statusMatch = true;
-        if (filterStatus !== "all") {
-            statusMatch = candidate.status === filterStatus;
-        }
-
-        if (jobMatch && statusMatch) {
-            filteredCandidates.push(candidate);
-        }
-    }
-
-    // Changes a single candidate's status without touching the others.
-    function updateStatus(id, newStatus) {
-        const updated = [];
-
-        for (let i = 0; i < candidates.length; i++) {
-            const candidate = candidates[i];
-
-            if (candidate.id !== id) {
-                updated.push(candidate);
-            } else {
-                // Build a new candidate object with the updated status (no spread)
-                updated.push({
-                    id: candidate.id, name: candidate.name,
-                    position: candidate.position, experience: candidate.experience,
-                    skills: candidate.skills, location: candidate.location,
-                    email: candidate.email, phone: candidate.phone,
-                    appliedJob: candidate.appliedJob, appliedDate: candidate.appliedDate,
-                    bio: candidate.bio, education: candidate.education,
-                    status: newStatus,
-                });
-            }
-        }
-
-        setCandidates(updated);
-    }
-
-    return (
-        <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
-
-            {/* Tab header */}
-            <div style={{ marginBottom: 20 }}>
-                <h2 style={{ margin: "0 0 2px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Quản lý ứng viên</h2>
-                <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>{filteredCandidates.length} ứng viên</p>
-            </div>
-
-            {/* Filter dropdowns */}
-            <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
-
-                {/* Filter by which job the candidate applied to */}
-                <select value={filterJob} onChange={function (e) { setFilterJob(e.target.value); }} style={autoSelectStyle}>
-                    <option value="all">Tất cả tin đăng</option>
-                    {jobs.map(function (job) {
-                        return (
-                            <option key={job.id} value={job.id}>
-                                {job.title.slice(0, 40)}…
-                            </option>
-                        );
-                    })}
+            <div style={{ display:"flex", gap:10, marginBottom:16 }}>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm theo tên, email..."
+                    style={{ ...inputStyle, maxWidth:280 }} />
+                <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={smallSelectStyle}>
+                    <option value="all">Tất cả vai trò</option>
+                    <option value="user">Người tìm việc</option>
+                    <option value="employer">Nhà tuyển dụng</option>
                 </select>
-
-                {/* Filter by candidate status */}
-                <select value={filterStatus} onChange={function (e) { setFilterStatus(e.target.value); }} style={autoSelectStyle}>
-                    <option value="all">Tất cả trạng thái</option>
-                    {Object.entries(STATUS_CONFIG).map(function (entry) {
-                        const key = entry[0];
-                        const value = entry[1];
-                        return <option key={key} value={key}>{value.label}</option>;
-                    })}
-                </select>
-
             </div>
 
-            {/* Candidates list or empty state */}
-            {filteredCandidates.length === 0 && (
-                <EmptyState icon="👥" title="Chưa có ứng viên" sub="Ứng viên sẽ xuất hiện ở đây khi họ nộp hồ sơ" />
-            )}
-
-            {filteredCandidates.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {filteredCandidates.map(function (candidate) {
-
-                        // Tìm tên tin tuyển dụng mà ứng viên này đã nộp
-                        let jobTitle = "N/A";
-                        for (let i = 0; i < jobs.length; i++) {
-                            if (jobs[i].id === candidate.appliedJob) {
-                                jobTitle = jobs[i].title.slice(0, 35) + "…";
-                                break;
-                            }
-                        }
-
-                        // Lấy tối đa 3 kỹ năng đầu để hiển thị
-                        const topSkills = [];
-                        for (let i = 0; i < candidate.skills.length && i < 3; i++) {
-                            topSkills.push(candidate.skills[i]);
-                        }
-
-                        return (
-                            <div key={candidate.id} style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "16px 20px" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-
-                                    {/* Avatar + info */}
-                                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flex: 1, minWidth: 0 }}>
-                                        <div style={{ width: 44, height: 44, borderRadius: "50%", background: getAvatarColor(candidate.name), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-                                            {getInitials(candidate.name)}
+            {loading ? (
+                <div style={{ textAlign:"center", padding:60, color:"#9ca3af" }}>Đang tải...</div>
+            ) : (
+                <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                        <thead>
+                            <tr style={{ background:"#f9fafb" }}>
+                                {["Người dùng","Email","Vai trò","Trạng thái","Ngày tạo","Hành động"].map(h => (
+                                    <th key={h} style={{ padding:"11px 16px", color:"#6b7280", fontWeight:600, textAlign:"left", borderBottom:"1px solid #e5e7eb", whiteSpace:"nowrap", fontSize:12 }}>{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map(u => (
+                                <tr key={u.id} style={{ borderBottom:"1px solid #f3f4f6" }}
+                                    onMouseEnter={e => e.currentTarget.style.background="#fafafa"}
+                                    onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                                    <td style={{ padding:"12px 16px" }}>
+                                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                                            <div style={{ width:32, height:32, borderRadius:"50%", background:getAvatarColor(u.full_name||''), display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:11, fontWeight:700, flexShrink:0 }}>
+                                                {getInitials(u.full_name||'')}
+                                            </div>
+                                            <span style={{ fontWeight:600, color:"#111827" }}>{u.full_name}</span>
                                         </div>
-                                        <div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                                                <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{candidate.name}</span>
-                                                <Badge status={candidate.status} />
-                                            </div>
-                                            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>{candidate.position} · {candidate.experience}</div>
-                                            <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                                                Ứng tuyển: <span style={{ color: "#374151" }}>{jobTitle}</span> · {formatDate(candidate.appliedDate)}
-                                            </div>
-                                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                                                {topSkills.map(function (skill) {
-                                                    return (
-                                                        <span key={skill} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "#f5f3ff", color: "#7c3aed" }}>
-                                                            {skill}
-                                                        </span>
-                                                    );
-                                                })}
-                                            </div>
+                                    </td>
+                                    <td style={{ padding:"12px 16px", color:"#6b7280" }}>{u.email}</td>
+                                    <td style={{ padding:"12px 16px" }}><span style={roleStyle(u.role)}>{roleLabel(u.role)}</span></td>
+                                    <td style={{ padding:"12px 16px" }}><span style={userStatusStyle(u.status)}>{userStatusLabel(u.status)}</span></td>
+                                    <td style={{ padding:"12px 16px", color:"#9ca3af", whiteSpace:"nowrap" }}>{formatDate(u.created_at)}</td>
+                                    <td style={{ padding:"12px 16px" }}>
+                                        <div style={{ display:"flex", gap:6 }}>
+                                            <button style={actionBtn('default')} onClick={() => { setEditUser(u); setEditForm({ full_name:u.full_name, email:u.email, role:u.role, status:u.status }); }}>Sửa</button>
+                                            <button style={actionBtn(u.status==='active'?'warning':'success')} onClick={() => toggleLock(u)}>
+                                                {u.status==='active' ? '🔒 Khóa' : '🔓 Mở'}
+                                            </button>
+                                            <button style={actionBtn('danger')} onClick={() => setConfirmDel(u)}>Xóa</button>
                                         </div>
-                                    </div>
-
-                                    {/* Status dropdown + CV button */}
-                                    <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", flexWrap: "wrap" }}>
-                                        <select value={candidate.status} onChange={function (e) { updateStatus(candidate.id, e.target.value); }} style={smallSelectStyle}>
-                                            {Object.entries(STATUS_CONFIG).map(function (entry) {
-                                                const key = entry[0];
-                                                const value = entry[1];
-                                                return <option key={key} value={key}>{value.label}</option>;
-                                            })}
-                                        </select>
-                                        <button onClick={function () { setViewCV(candidate); }} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #7c3aed", background: "#f5f3ff", color: "#7c3aed", fontSize: 12, cursor: "pointer", fontWeight: 500 }}>
-                                            Xem CV
-                                        </button>
-                                    </div>
-
-                                </div>
-                            </div>
-                        );
-                    })}
+                                    </td>
+                                </tr>
+                            ))}
+                            {filtered.length === 0 && (
+                                <tr><td colSpan={6}><EmptyState icon="👤" title="Không tìm thấy người dùng" sub="Thử thay đổi bộ lọc tìm kiếm" /></td></tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
 
-            {/* CV modal — only shown when a candidate is selected */}
-            {viewCV && (
-                <CVModal candidate={viewCV} onClose={function () { setViewCV(null); }} />
-            )}
+            {/* Edit modal */}
+            <Modal open={!!editUser} title="Chỉnh sửa người dùng" onClose={() => setEditUser(null)}>
+                {editUser && (
+                    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                        <div>{getFieldLabel("Họ và tên")}<input value={editForm.full_name} onChange={e => setEditForm(f=>({...f,full_name:e.target.value}))} style={inputStyle}/></div>
+                        <div>{getFieldLabel("Email")}<input value={editForm.email} onChange={e => setEditForm(f=>({...f,email:e.target.value}))} style={inputStyle}/></div>
+                        <div>{getFieldLabel("Vai trò")}
+                            <select value={editForm.role} onChange={e => setEditForm(f=>({...f,role:e.target.value}))} style={{ ...inputStyle }}>
+                                <option value="user">Người tìm việc</option>
+                                <option value="employer">Nhà tuyển dụng</option>
+                            </select>
+                        </div>
+                        <div>{getFieldLabel("Trạng thái")}
+                            <select value={editForm.status} onChange={e => setEditForm(f=>({...f,status:e.target.value}))} style={{ ...inputStyle }}>
+                                <option value="active">Hoạt động</option>
+                                <option value="locked">Bị khóa</option>
+                            </select>
+                        </div>
+                        <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:4 }}>
+                            <button onClick={() => setEditUser(null)} style={actionBtn('default')}>Hủy</button>
+                            <button onClick={saveEdit} disabled={saving} style={{ ...actionBtn('primary'), opacity:saving ? .5:1 }}>
+                                {saving ? <><SpinnerDot/> Đang lưu...</> : 'Lưu thay đổi'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
 
+            {/* Confirm delete */}
+            <Modal open={!!confirmDel} title="Xác nhận xóa tài khoản" onClose={() => setConfirmDel(null)}>
+                {confirmDel && (
+                    <div>
+                        <p style={{ color:"#374151", marginBottom:20 }}>Bạn có chắc muốn xóa tài khoản <strong>{confirmDel.full_name}</strong>? Hành động này không thể hoàn tác.</p>
+                        <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                            <button onClick={() => setConfirmDel(null)} style={actionBtn('default')}>Hủy</button>
+                            <button onClick={deleteUser} style={actionBtn('danger')}>Xóa tài khoản</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
-}
+};
 
-//  TalentTab 
-// A search panel that filters the talent pool by skill, experience, and location.
+// ─── JobsTab ──────────────────────────────────────────────────
+const JobsTab = ({ toast }) => {
+    const [jobs,        setJobs]       = useState([]);
+    const [loading,     setLoading]    = useState(true);
+    const [search,      setSearch]     = useState('');
+    const [statusFilter,setStatusFilter] = useState('all');
+    const [confirmDel,  setConfirmDel] = useState(null);
 
-function TalentTab() {
-    const [searchSkill, setSearchSkill] = useState("");
-    const [searchExperience, setSearchExperience] = useState("Tất cả");
-    const [searchLocation, setSearchLocation] = useState("Tất cả");
-    const [results, setResults] = useState([]);
-    const [hasSearched, setHasSearched] = useState(false);
+    const load = useCallback(() => {
+        setLoading(true);
+        apiFetch('admin-get-jobs').then(r => { if (r.success) setJobs(r.data.jobs || []); setLoading(false); });
+    }, []);
+    useEffect(load, [load]);
 
-    // Filters the talent pool and updates the results state.
-    function handleSearch() {
-        const keyword = searchSkill.toLowerCase();
-        const filtered = [];
+    const filtered = jobs.filter(j => {
+        const q = search.toLowerCase();
+        return (j.title?.toLowerCase().includes(q) || j.company?.toLowerCase().includes(q))
+            && (statusFilter === 'all' || j.status === statusFilter);
+    });
 
-        for (let i = 0; i < results.length; i++) {
-            const talent = results[i];
-
-            // Skill/position match — true if no keyword was typed
-            let skillMatch = true;
-            if (keyword !== "") {
-                const positionMatch = talent.position.toLowerCase().includes(keyword);
-
-                let hasSkill = false;
-                for (let j = 0; j < talent.skills.length; j++) {
-                    if (talent.skills[j].toLowerCase().includes(keyword)) {
-                        hasSkill = true;
-                        break;
-                    }
-                }
-
-                skillMatch = positionMatch || hasSkill;
-            }
-
-            // Experience match — true if "Tất cả" is selected
-            let experienceMatch = true;
-            if (searchExperience !== "Tất cả") {
-                experienceMatch = talent.experience === searchExperience;
-            }
-
-            // Location match — true if "Tất cả" is selected
-            let locationMatch = true;
-            if (searchLocation !== "Tất cả") {
-                locationMatch = talent.location === searchLocation;
-            }
-
-            if (skillMatch && experienceMatch && locationMatch) {
-                filtered.push(talent);
-            }
-        }
-
-        setResults(filtered);
-        setHasSearched(true);
+    async function setStatus(job, status) {
+        const r = await apiFetch('admin-update-job', { method:'POST', body:{ id:job.id, status } });
+        if (r.success) { toast({ active:'✅ Đã duyệt', closed:'🚫 Đã đóng' }[status] || 'Đã cập nhật', 'success'); load(); }
+        else toast(r.message || 'Lỗi', 'error');
+    }
+    async function deleteJob() {
+        const r = await apiFetch('admin-delete-job', { method:'POST', body:{ id:confirmDel.id } });
+        if (r.success) { toast('🗑️ Đã xóa bài đăng', 'success'); setConfirmDel(null); load(); }
+        else toast(r.message || 'Lỗi', 'error');
     }
 
-    // Triggers the search when Enter is pressed in the skill input.
-    function handleKeyDown(event) {
-        if (event.key === "Enter") {
-            handleSearch();
-        }
-    }
+    const counts = { all:jobs.length, active:jobs.filter(j=>j.status==='active').length, pending:jobs.filter(j=>j.status==='pending').length, closed:jobs.filter(j=>j.status==='closed').length };
 
     return (
-        <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Tìm kiếm ứng viên</h2>
-            <p style={{ margin: "0 0 24px", fontSize: 13, color: "#6b7280" }}>Tìm kiếm trong cơ sở dữ liệu ứng viên của JobHot</p>
+        <div style={{ flex:1, overflowY:"auto", padding:24 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+                <div>
+                    <h2 style={{ margin:"0 0 4px", fontSize:20, fontWeight:700, color:"#111827" }}>Quản lý bài đăng</h2>
+                    <p style={{ margin:0, fontSize:13, color:"#6b7280" }}>{jobs.length} bài đăng trong hệ thống</p>
+                </div>
+            </div>
 
-            {/* Search filter bar */}
-            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 24px", marginBottom: 24 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 12, alignItems: "flex-end" }}>
-
-                    {/* Skill / position keyword input */}
-                    <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>Kỹ năng / Vị trí</label>
-                        <input value={searchSkill} onChange={function (e) { setSearchSkill(e.target.value); }} placeholder="React, Python, Designer..." style={inputStyle} onKeyDown={handleKeyDown} />
-                    </div>
-
-                    {/* Experience dropdown */}
-                    <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>Kinh nghiệm</label>
-                        <select value={searchExperience} onChange={function (e) { setSearchExperience(e.target.value); }} style={inputStyle}>
-                            <option>Tất cả</option>
-                            {EXPERIENCES.map(function (exp) { return <option key={exp}>{exp}</option>; })}
-                        </select>
-                    </div>
-
-                    {/* Location dropdown */}
-                    <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 5 }}>Địa điểm</label>
-                        <select value={searchLocation} onChange={function (e) { setSearchLocation(e.target.value); }} style={inputStyle}>
-                            <option>Tất cả</option>
-                            {LOCATIONS.map(function (loc) { return <option key={loc}>{loc}</option>; })}
-                        </select>
-                    </div>
-
-                    {/* Search button */}
-                    <button onClick={handleSearch} style={{ padding: "9px 22px", borderRadius: 10, border: "none", background: "#7c3aed", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                        🔍 Tìm kiếm
+            {/* Filter pills */}
+            <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+                {[['all','Tất cả'],['active','Đang tuyển'],['pending','Chờ duyệt'],['closed','Đã đóng']].map(([val,label]) => (
+                    <button key={val} onClick={() => setStatusFilter(val)}
+                        style={{ padding:"7px 16px", borderRadius:20, fontSize:13, cursor:"pointer",
+                            border: statusFilter===val ? "1px solid #7c3aed" : "1px solid #e5e7eb",
+                            background: statusFilter===val ? "#f5f3ff" : "#fff",
+                            color: statusFilter===val ? "#7c3aed" : "#6b7280",
+                            fontWeight: statusFilter===val ? 600 : 400 }}>
+                        {label} <span style={{ fontSize:11, opacity:.7 }}>({counts[val]})</span>
                     </button>
-
-                </div>
+                ))}
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm tiêu đề, công ty..."
+                    style={{ ...inputStyle, maxWidth:240, marginLeft:"auto" }} />
             </div>
 
-            {/* Result count — only shown after at least one search */}
-            {hasSearched && (
-                <p style={{ margin: "0 0 16px", fontSize: 13, color: "#6b7280" }}>
-                    Tìm thấy <strong style={{ color: "#111827" }}>{results.length}</strong> ứng viên phù hợp
-                </p>
-            )}
-
-            {/* No results state */}
-            {results.length === 0 && hasSearched && (
-                <EmptyState icon="🔍" title="Không tìm thấy ứng viên" sub="Thử thay đổi từ khóa hoặc bộ lọc tìm kiếm" />
-            )}
-
-            {/* Talent cards grid */}
-            {results.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
-                    {results.map(function (talent) {
-                        return (
-                            <div
-                                key={talent.id}
-                                style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "18px 18px", transition: "box-shadow 0.15s" }}
-                                onMouseEnter={function (e) { e.currentTarget.style.boxShadow = "0 4px 16px rgba(124,58,237,0.10)"; }}
-                                onMouseLeave={function (e) { e.currentTarget.style.boxShadow = "none"; }}
-                            >
-                                {/* Avatar + name */}
-                                <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
-                                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: getAvatarColor(talent.name), display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-                                        {getInitials(talent.name)}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{talent.name}</div>
-                                        <div style={{ fontSize: 12, color: "#6b7280" }}>{talent.position}</div>
-                                    </div>
-                                </div>
-
-                                {/* Location + experience */}
-                                <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>
-                                    <span>📍 {talent.location}</span>
-                                    <span>⏱ {talent.experience}</span>
-                                </div>
-
-                                {/* Skills */}
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
-                                    {talent.skills.map(function (skill) {
-                                        return (
-                                            <span key={skill} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 20, background: "#f5f3ff", color: "#7c3aed", fontWeight: 500 }}>
-                                                {skill}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Contact link */}
-                                <a
-                                    href={"mailto:" + talent.email}
-                                    style={{ display: "block", textAlign: "center", padding: "8px", borderRadius: 8, border: "1px solid #7c3aed", color: "#7c3aed", fontSize: 12, fontWeight: 600, textDecoration: "none", transition: "all 0.15s" }}
-                                    onMouseEnter={function (e) { e.currentTarget.style.background = "#7c3aed"; e.currentTarget.style.color = "#fff"; }}
-                                    onMouseLeave={function (e) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#7c3aed"; }}
-                                >
-                                    ✉️ Liên hệ ứng viên
-                                </a>
-
-                            </div>
-                        );
-                    })}
+            {loading ? (
+                <div style={{ textAlign:"center", padding:60, color:"#9ca3af" }}>Đang tải...</div>
+            ) : (
+                <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                        <thead>
+                            <tr style={{ background:"#f9fafb" }}>
+                                {["Tiêu đề","Công ty","Danh mục","Địa điểm","Trạng thái","Ngày đăng","Hành động"].map(h => (
+                                    <th key={h} style={{ padding:"11px 16px", color:"#6b7280", fontWeight:600, textAlign:"left", borderBottom:"1px solid #e5e7eb", whiteSpace:"nowrap", fontSize:12 }}>{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map(j => (
+                                <tr key={j.id} style={{ borderBottom:"1px solid #f3f4f6" }}
+                                    onMouseEnter={e => e.currentTarget.style.background="#fafafa"}
+                                    onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                                    <td style={{ padding:"12px 16px", maxWidth:200 }}>
+                                        <div style={{ fontWeight:600, color:"#111827", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{j.title}</div>
+                                    </td>
+                                    <td style={{ padding:"12px 16px", color:"#6b7280", whiteSpace:"nowrap" }}>{j.company}</td>
+                                    <td style={{ padding:"12px 16px", color:"#6b7280", whiteSpace:"nowrap" }}>{j.category_icon} {j.category_name||'—'}</td>
+                                    <td style={{ padding:"12px 16px", color:"#6b7280", whiteSpace:"nowrap" }}>{j.location}</td>
+                                    <td style={{ padding:"12px 16px" }}><span style={jobStatusStyle(j.status)}>{jobStatusLabel(j.status)}</span></td>
+                                    <td style={{ padding:"12px 16px", color:"#9ca3af", whiteSpace:"nowrap" }}>{formatDate(j.created_at)}</td>
+                                    <td style={{ padding:"12px 16px" }}>
+                                        <div style={{ display:"flex", gap:6 }}>
+                                            {j.status !== 'active' && <button style={actionBtn('success')} onClick={() => setStatus(j,'active')}>✅ Duyệt</button>}
+                                            {j.status !== 'closed' && <button style={actionBtn('warning')} onClick={() => setStatus(j,'closed')}>🚫 Đóng</button>}
+                                            <button style={actionBtn('danger')} onClick={() => setConfirmDel(j)}>Xóa</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filtered.length === 0 && (
+                                <tr><td colSpan={7}><EmptyState icon="📋" title="Không tìm thấy bài đăng" sub="Thử thay đổi bộ lọc tìm kiếm" /></td></tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
 
+            <Modal open={!!confirmDel} title="Xác nhận xóa bài đăng" onClose={() => setConfirmDel(null)}>
+                {confirmDel && (
+                    <div>
+                        <p style={{ color:"#374151", marginBottom:20 }}>Xóa bài đăng <strong>"{confirmDel.title}"</strong> của <strong>{confirmDel.company}</strong>? Hành động này không thể hoàn tác.</p>
+                        <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                            <button onClick={() => setConfirmDel(null)} style={actionBtn('default')}>Hủy</button>
+                            <button onClick={deleteJob} style={actionBtn('danger')}>Xóa bài đăng</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
-}
+};
 
-//  CompanyTab 
-// A form for editing the employer's company profile.
+// ─── CategoriesTab ────────────────────────────────────────────
+const CategoriesTab = ({ toast }) => {
+    const [cats,       setCats]      = useState([]);
+    const [loading,    setLoading]   = useState(true);
+    const [modal,      setModal]     = useState(null);
+    const [form,       setForm]      = useState({ id:null, name:'', icon:'📂' });
+    const [saving,     setSaving]    = useState(false);
+    const [confirmDel, setConfirmDel]= useState(null);
 
-function CompanyTab() {
-    const [name, setName] = useState("Công ty JobHot");
-    const [description, setDescription] = useState("Nền tảng tuyển dụng hàng đầu Việt Nam, kết nối hàng triệu ứng viên với các nhà tuyển dụng uy tín trên cả nước.");
-    const [address, setAddress] = useState("Tòa nhà FLC, 18 Phạm Hùng, Nam Từ Liêm, Hà Nội");
-    const [website, setWebsite] = useState("https://jobhot.vn");
-    const [size, setSize] = useState("50-100 nhân viên");
-    const [industry, setIndustry] = useState("Công nghệ thông tin");
-    const [email, setEmail] = useState("hr@jobhot.vn");
-    const [phone, setPhone] = useState("024 1234 5678");
-    const [saved, setSaved] = useState(false); // true for 2.5s after saving
+    const ICONS = ['💻','📣','🎨','💰','🏥','📚','🏗️','🚚','👥','💼','📞','🏛️','🔬','⚖️','✈️','🍽️','📦','🌿','📐','🎮','📂','🖥️','📊','🧬','🏦'];
 
-    // Hiển thị "Đã lưu!" trong 2.5 giây sau khi lưu thành công
-    function handleSave(event) {
-        event.preventDefault();
-        setSaved(true);
-        setTimeout(function () { setSaved(false); }, 2500);
+    const load = useCallback(() => {
+        setLoading(true);
+        apiFetch('admin-get-categories').then(r => { if (r.success) setCats(r.data.categories||[]); setLoading(false); });
+    }, []);
+    useEffect(load, [load]);
+
+    async function save() {
+        if (!form.name.trim()) { toast('Tên danh mục không được để trống', 'error'); return; }
+        setSaving(true);
+        const action = modal === 'add' ? 'admin-add-category' : 'admin-update-category';
+        const r = await apiFetch(action, { method:'POST', body:form });
+        setSaving(false);
+        if (r.success) { toast(modal==='add'?'✅ Đã thêm danh mục':'✅ Đã cập nhật', 'success'); setModal(null); load(); }
+        else toast(r.message||'Lỗi', 'error');
     }
-
-    // Xác định chữ nút lưu
-    let saveButtonLabel;
-    if (saved) {
-        saveButtonLabel = "✓ Đã lưu!";
-    } else {
-        saveButtonLabel = "Lưu thay đổi";
+    async function del() {
+        const r = await apiFetch('admin-delete-category', { method:'POST', body:{ id:confirmDel.id } });
+        if (r.success) { toast('🗑️ Đã xóa danh mục', 'success'); setConfirmDel(null); load(); }
+        else toast(r.message||'Lỗi', 'error');
     }
 
     return (
-        <div style={{ flex: 1, overflowY: "auto", padding: 24, maxWidth: 720 }}>
-
-            {/* Company logo + name header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 28 }}>
-                <div style={{ width: 68, height: 68, borderRadius: 16, background: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 22, fontWeight: 700 }}>
-                    CT
-                </div>
+        <div style={{ flex:1, overflowY:"auto", padding:24 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
                 <div>
-                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" }}>{name}</h2>
-                    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>{industry} · {size}</div>
+                    <h2 style={{ margin:"0 0 4px", fontSize:20, fontWeight:700, color:"#111827" }}>Quản lý danh mục</h2>
+                    <p style={{ margin:0, fontSize:13, color:"#6b7280" }}>{cats.length} danh mục hiện có</p>
                 </div>
+                <button onClick={() => { setForm({ id:null, name:'', icon:'📂' }); setModal('add'); }}
+                    style={{ padding:"9px 18px", borderRadius:9, border:"none", background:"#7c3aed", color:"#fff", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                    + Thêm danh mục
+                </button>
             </div>
 
-            <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {loading ? (
+                <div style={{ textAlign:"center", padding:60, color:"#9ca3af" }}>Đang tải...</div>
+            ) : (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:14 }}>
+                    {cats.map(c => (
+                        <div key={c.id} style={{ background:"#fff", borderRadius:12, border:"1px solid #e5e7eb", padding:"18px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                                <div style={{ width:44, height:44, borderRadius:10, background:"#f5f3ff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{c.icon}</div>
+                                <div>
+                                    <div style={{ color:"#111827", fontWeight:600, fontSize:14 }}>{c.name}</div>
+                                    <div style={{ color:"#9ca3af", fontSize:11, marginTop:2 }}>ID: {c.id}</div>
+                                </div>
+                            </div>
+                            <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                                <button style={actionBtn('default')} onClick={() => { setForm({ id:c.id, name:c.name, icon:c.icon||'📂' }); setModal('edit'); }}>Sửa</button>
+                                <button style={actionBtn('danger')} onClick={() => setConfirmDel(c)}>Xóa</button>
+                            </div>
+                        </div>
+                    ))}
+                    {cats.length === 0 && <EmptyState icon="🗂️" title="Chưa có danh mục" sub="Nhấn Thêm danh mục để bắt đầu" />}
+                </div>
+            )}
 
-                {getSectionTitle("Thông tin cơ bản")}
-
-                {/* Two-column grid of basic fields */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            {/* Add/Edit modal */}
+            <Modal open={!!modal} title={modal==='add'?'Thêm danh mục mới':'Chỉnh sửa danh mục'} onClose={() => setModal(null)}>
+                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                    <div>{getFieldLabel("Tên danh mục")}<input value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} placeholder="Ví dụ: Công nghệ thông tin" style={inputStyle}/></div>
                     <div>
-                        {getFieldLabel("Tên công ty *")}
-                        <input value={name} onChange={function (e) { setName(e.target.value); }} required style={inputStyle} />
+                        {getFieldLabel("Chọn icon")}
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                            {ICONS.map(ic => (
+                                <button key={ic} onClick={() => setForm(f=>({...f,icon:ic}))}
+                                    style={{ fontSize:18, background:form.icon===ic?"#f5f3ff":"#fff", border:`2px solid ${form.icon===ic?"#7c3aed":"#e5e7eb"}`, borderRadius:8, width:36, height:36, cursor:"pointer" }}>
+                                    {ic}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div>
-                        {getFieldLabel("Website")}
-                        <input value={website} onChange={function (e) { setWebsite(e.target.value); }} placeholder="https://..." style={inputStyle} />
+                    {/* Preview */}
+                    <div style={{ display:"flex", alignItems:"center", gap:12, background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:10, padding:"12px 16px" }}>
+                        <div style={{ width:40, height:40, borderRadius:10, background:"#f5f3ff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>{form.icon}</div>
+                        <span style={{ color:"#111827", fontWeight:600, fontSize:14 }}>{form.name||'Xem trước danh mục'}</span>
                     </div>
-                    <div>
-                        {getFieldLabel("Email liên hệ")}
-                        <input type="email" value={email} onChange={function (e) { setEmail(e.target.value); }} style={inputStyle} />
-                    </div>
-                    <div>
-                        {getFieldLabel("Số điện thoại")}
-                        <input value={phone} onChange={function (e) { setPhone(e.target.value); }} style={inputStyle} />
-                    </div>
-                    <div>
-                        {getFieldLabel("Ngành nghề")}
-                        <select value={industry} onChange={function (e) { setIndustry(e.target.value); }} style={inputStyle}>
-                            {CATEGORIES.map(function (cat) { return <option key={cat}>{cat}</option>; })}
-                        </select>
-                    </div>
-                    <div>
-                        {getFieldLabel("Quy mô")}
-                        <select value={size} onChange={function (e) { setSize(e.target.value); }} style={inputStyle}>
-                            {COMPANY_SIZES.map(function (s) { return <option key={s}>{s}</option>; })}
-                        </select>
+                    <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                        <button onClick={() => setModal(null)} style={actionBtn('default')}>Hủy</button>
+                        <button onClick={save} disabled={saving} style={{ ...actionBtn('primary'), opacity:saving ? .5:1 }}>
+                            {saving ? <><SpinnerDot/> Đang lưu...</> : modal==='add'?'Thêm danh mục':'Lưu thay đổi'}
+                        </button>
                     </div>
                 </div>
+            </Modal>
 
-                {/* Address */}
-                <div>
-                    {getFieldLabel("Địa chỉ *")}
-                    <input value={address} onChange={function (e) { setAddress(e.target.value); }} required style={inputStyle} />
-                </div>
-
-                {/* Description */}
-                <div>
-                    {getFieldLabel("Mô tả công ty *")}
-                    <textarea value={description} onChange={function (e) { setDescription(e.target.value); }} required rows={5} placeholder="Mô tả về công ty, văn hóa, sứ mệnh..." style={textareaStyle} />
-                </div>
-
-                {/* Save button */}
-                <button
-                    type="submit"
-                    style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: "#7c3aed", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "fit-content", transition: "background 0.15s" }}
-                    onMouseEnter={function (e) { e.currentTarget.style.background = "#6d28d9"; }}
-                    onMouseLeave={function (e) { e.currentTarget.style.background = "#7c3aed"; }}
-                >
-                    {saveButtonLabel}
-                </button>
-
-            </form>
+            {/* Confirm delete */}
+            <Modal open={!!confirmDel} title="Xác nhận xóa danh mục" onClose={() => setConfirmDel(null)}>
+                {confirmDel && (
+                    <div>
+                        <p style={{ color:"#374151", marginBottom:8 }}>Xóa danh mục <strong>"{confirmDel.name}"</strong>?</p>
+                        <p style={{ color:"#854d0e", fontSize:12, background:"#fefce8", border:"1px solid #fde68a", borderRadius:8, padding:"10px 12px", marginBottom:20 }}>
+                            ⚠️ Các bài đăng thuộc danh mục này sẽ không còn danh mục.
+                        </p>
+                        <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                            <button onClick={() => setConfirmDel(null)} style={actionBtn('default')}>Hủy</button>
+                            <button onClick={del} style={actionBtn('danger')}>Xóa danh mục</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
-}
+};
 
-//  EmployerDashboard (root entry point) 
-// Holds the top-level state (jobs, candidates, active tab)
-// and renders the sidebar + the currently active tab panel.
-const API = '/server/index.php';
+// ─── Root ─────────────────────────────────────────────────────
+export default function AdminDashboard() {
+    const [activeTab,  setActiveTab] = useState('overview');
+    const [stats,      setStats]     = useState({});
+    const [catStats,   setCatStats]  = useState([]);
+    const [toastMsg,   setToastMsg]  = useState('');
+    const [toastType,  setToastType] = useState('success');
 
-export default function EmployerDashboard() {
-    const [activeTab, setActiveTab] = useState("overview");
-    const [jobs, setJobs] = useState([]);
-    const [candidates, setCandidates] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    // Maps tab ids to the header title shown in the top bar
     const TAB_TITLES = {
-        overview: "Tổng quan",
-        jobs: "Quản lý tin đăng",
-        candidates: "Quản lý ứng viên",
-        talent: "Tìm kiếm ứng viên",
-        company: "Thông tin công ty",
+        overview:   'Tổng quan',
+        users:      'Quản lý người dùng',
+        jobs:       'Quản lý bài đăng',
+        categories: 'Quản lý danh mục',
     };
 
-    // Fetch data when component mounts
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-
-                // Fetch jobs from backend
-                const jobsResponse = await fetch(API + '?action=get-jobs');
-                const jobsData = await jobsResponse.json();
-
-                if (jobsData.success) {
-                    const jobsList = jobsData.data?.jobs || jobsData.jobs || [];
-                    // Initialize jobs with status from backend or default to 'active'
-                    const processedJobs = jobsList.map(job => ({
-                        ...job,
-                        status: job.status || 'active'
-                    }));
-                    setJobs(processedJobs);
-                }
-
-                // Fetch applied jobs (candidates)
-                const token = localStorage.getItem('token');
-                if (token) {
-                    const candidatesResponse = await fetch(API + '?action=get-applied-jobs', {
-                        headers: {
-                            'Authorization': 'Bearer ' + token
-                        }
-                    });
-                    const candidatesData = await candidatesResponse.json();
-
-                    if (candidatesData.success) {
-                        const candidatesList = candidatesData.data || [];
-                        setCandidates(candidatesList);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
+        apiFetch('admin-get-stats').then(r => {
+            if (r.success) { setStats(r.data); setCatStats(r.data.categoryStats || []); }
+        });
     }, []);
 
-    // Xóa token và chuyển về trang đăng nhập
-    function handleLogout() {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
-        localStorage.removeItem("name");
-        localStorage.removeItem("email");
-        localStorage.removeItem("industry");
-        localStorage.removeItem("company");
-        localStorage.removeItem("avatar");
-        localStorage.removeItem("rememberMe");
-        window.location.href = "/login";
+    function toast(msg, type = 'success') {
+        setToastMsg(msg); setToastType(type);
+        setTimeout(() => setToastMsg(''), 3000);
     }
 
-    // Đếm số tin đang tuyển để hiển thị trên top bar
-    const activeJobCount = jobs.filter(function (j) { return j.status === "active"; }).length;
+    function handleLogout() {
+        ['token','role','name','email','industry','company','avatar','rememberMe'].forEach(k => localStorage.removeItem(k));
+        window.location.href = '/login';
+    }
 
     return (
         <>
-            {/* Global CSS: spin animation and box-sizing reset */}
             <style>{`
                 @keyframes spin { to { transform: rotate(360deg); } }
                 * { box-sizing: border-box; }
-                body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+                body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; }
             `}</style>
 
-            <div style={{ display: "flex", height: "100vh", background: "#f9fafb", overflow: "hidden" }}>
-
-                {/* Left sidebar navigation */}
+            <div style={{ display:"flex", height:"100vh", background:"#f9fafb", overflow:"hidden" }}>
                 <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
 
-                {/* Main content area */}
-                <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
-
-                    {/* Top header bar */}
-                    <div style={{ padding: "14px 24px", borderBottom: "1px solid #f3f4f6", background: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+                <main style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden" }}>
+                    {/* Top bar */}
+                    <div style={{ padding:"14px 24px", borderBottom:"1px solid #f3f4f6", background:"#fff", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
                         <div>
-                            <h1 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}>{TAB_TITLES[activeTab]}</h1>
-                            <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 1 }}>JobHot - Nhà tuyển dụng</div>
+                            <h1 style={{ margin:0, fontSize:17, fontWeight:700, color:"#111827" }}>{TAB_TITLES[activeTab]}</h1>
+                            <div style={{ fontSize:12, color:"#9ca3af", marginTop:1 }}>JobHot - Quản trị viên</div>
                         </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                            <div style={{ fontSize: 12, background: "#f0fdf4", color: "#15803d", padding: "4px 12px", borderRadius: 20, fontWeight: 500 }}>
-                                {activeJobCount} tin đang tuyển
+                        <div style={{ display:"flex", gap:8 }}>
+                            <div style={{ fontSize:12, background:"#f0fdf4", color:"#15803d", padding:"4px 12px", borderRadius:20, fontWeight:500 }}>
+                                {stats.activeJobs ?? '—'} tin đang tuyển
                             </div>
-                            <div style={{ fontSize: 12, background: "#f5f3ff", color: "#7c3aed", padding: "4px 12px", borderRadius: 20, fontWeight: 500 }}>
-                                {candidates.length} ứng viên
+                            <div style={{ fontSize:12, background:"#f5f3ff", color:"#7c3aed", padding:"4px 12px", borderRadius:20, fontWeight:500 }}>
+                                {stats.totalUsers ?? '—'} người dùng
                             </div>
                         </div>
                     </div>
 
-                    {/* Tab content panel */}
-                    <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-                        {activeTab === "overview" && <OverviewTab jobs={jobs} candidates={candidates} setActiveTab={setActiveTab} />}
-                        {activeTab === "jobs" && <JobsTab jobs={jobs} setJobs={setJobs} />}
-                        {activeTab === "candidates" && <CandidatesTab candidates={candidates} setCandidates={setCandidates} jobs={jobs} />}
-                        {activeTab === "talent" && <TalentTab />}
-                        {activeTab === "company" && <CompanyTab />}
+                    {/* Content */}
+                    <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+                        {activeTab === 'overview'   && <OverviewTab   stats={stats} catStats={catStats} setActiveTab={setActiveTab} />}
+                        {activeTab === 'users'      && <UsersTab      toast={toast} />}
+                        {activeTab === 'jobs'       && <JobsTab       toast={toast} />}
+                        {activeTab === 'categories' && <CategoriesTab toast={toast} />}
                     </div>
-
                 </main>
             </div>
+
+            <Toast msg={toastMsg} type={toastType} />
         </>
     );
 }

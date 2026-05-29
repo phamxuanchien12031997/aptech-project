@@ -171,11 +171,6 @@ const LoginPage = () => {
                     <h1 className="text-2xl font-bold text-center mb-1 text-gray-800">Đăng nhập</h1>
                     <p className="text-center text-gray-500 text-sm mb-6">Chào mừng bạn quay trở lại!</p>
 
-                    {/* Demo account hint */}
-                    <div className="mb-4 px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-700">
-                        <strong>Demo Admin:</strong> admin@jobhot.vn / Admin@123
-                    </div>
-
                     <ServerErrorBox message={serverError} />
 
                     <form onSubmit={handleLogin} noValidate className="flex flex-col gap-4">

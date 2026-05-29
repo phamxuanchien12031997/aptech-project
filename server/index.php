@@ -982,4 +982,223 @@ if ($action === 'update-profile') {
     ]);
 }
 
+// ============================================================
+// ADMIN HELPER — decode token and assert role = admin
+// ============================================================
+function requireAdmin(): int
+{
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $parts = explode('.', $matches[1]);
+        if (count($parts) === 3) {
+            $pad  = (4 - strlen($parts[1]) % 4) % 4;
+            $json = base64_decode(str_pad($parts[1], strlen($parts[1]) + $pad, '='));
+            $data = json_decode($json, true);
+            if ($data && isset($data['id']) && isset($data['role']) && $data['role'] === 'admin') {
+                return (int)$data['id'];
+            }
+        }
+    }
+    sendJsonResponse(false, 'Bạn không có quyền truy cập.', [], 403);
+    exit;
+}
+
+// ============================================================
+// ADMIN — enhanced stats
+// ============================================================
+if ($action === 'admin-get-stats') {
+    requireAdmin();
+    $db = getDatabaseConnection();
+
+    $totalJobs      = (int)$db->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
+    $activeJobs     = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'active'")->fetchColumn();
+    $pendingJobs    = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'pending'")->fetchColumn();
+    $totalUsers     = (int)$db->query("SELECT COUNT(*) FROM users WHERE role != 'admin'")->fetchColumn();
+    $totalEmployers = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'employer'")->fetchColumn();
+    $totalSeekers   = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'user'")->fetchColumn();
+    $totalCategories= (int)$db->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+    $totalApplications = (int)$db->query("SELECT COUNT(*) FROM applications")->fetchColumn();
+
+    // Jobs per category
+    $catStats = $db->query("
+        SELECT c.name, c.icon, COUNT(j.id) as job_count
+        FROM categories c
+        LEFT JOIN jobs j ON j.category_id = c.id
+        GROUP BY c.id, c.name, c.icon
+        ORDER BY job_count DESC
+    ")->fetchAll();
+
+    sendJsonResponse(true, 'OK', [
+        'totalJobs'        => $totalJobs,
+        'activeJobs'       => $activeJobs,
+        'pendingJobs'      => $pendingJobs,
+        'totalUsers'       => $totalUsers,
+        'totalEmployers'   => $totalEmployers,
+        'totalSeekers'     => $totalSeekers,
+        'totalCategories'  => $totalCategories,
+        'totalApplications'=> $totalApplications,
+        'categoryStats'    => $catStats,
+    ]);
+}
+
+// ============================================================
+// ADMIN — list all users
+// ============================================================
+if ($action === 'admin-get-users') {
+    requireAdmin();
+    $db = getDatabaseConnection();
+    $users = $db->query("
+        SELECT id, full_name, email, role, status, company, position, created_at
+        FROM users
+        WHERE role != 'admin'
+        ORDER BY created_at DESC
+    ")->fetchAll();
+    sendJsonResponse(true, 'OK', ['users' => $users]);
+}
+
+// ============================================================
+// ADMIN — update user (edit name/email, lock/unlock)
+// ============================================================
+if ($action === 'admin-update-user') {
+    requireAdmin();
+    $db  = getDatabaseConnection();
+    $id  = (int)($body['id'] ?? 0);
+    if (!$id) sendJsonResponse(false, 'Thiếu user id.', [], 400);
+
+    $allowed = ['full_name', 'email', 'status', 'role'];
+    $fields  = [];
+    $values  = [];
+    foreach ($allowed as $col) {
+        if (isset($body[$col])) {
+            $fields[] = "$col = ?";
+            $values[] = $body[$col];
+        }
+    }
+    if (empty($fields)) sendJsonResponse(false, 'Không có dữ liệu cập nhật.', [], 400);
+
+    $values[] = $id;
+    $db->prepare("UPDATE users SET " . implode(', ', $fields) . " WHERE id = ? AND role != 'admin'")->execute($values);
+    sendJsonResponse(true, 'Cập nhật người dùng thành công.');
+}
+
+// ============================================================
+// ADMIN — delete user
+// ============================================================
+if ($action === 'admin-delete-user') {
+    requireAdmin();
+    $db = getDatabaseConnection();
+    $id = (int)($body['id'] ?? 0);
+    if (!$id) sendJsonResponse(false, 'Thiếu user id.', [], 400);
+    $db->prepare("DELETE FROM users WHERE id = ? AND role != 'admin'")->execute([$id]);
+    sendJsonResponse(true, 'Đã xóa người dùng.');
+}
+
+// ============================================================
+// ADMIN — list all jobs (all statuses)
+// ============================================================
+if ($action === 'admin-get-jobs') {
+    requireAdmin();
+    $db   = getDatabaseConnection();
+    $jobs = $db->query("
+        SELECT j.id, j.title, j.company, j.location, j.work_type, j.level,
+               j.salary, j.status, j.created_at, j.deadline, j.applicants,
+               c.name AS category_name, c.icon AS category_icon
+        FROM jobs j
+        LEFT JOIN categories c ON c.id = j.category_id
+        ORDER BY j.created_at DESC
+    ")->fetchAll();
+    sendJsonResponse(true, 'OK', ['jobs' => $jobs]);
+}
+
+// ============================================================
+// ADMIN — update job status / fields
+// ============================================================
+if ($action === 'admin-update-job') {
+    requireAdmin();
+    $db = getDatabaseConnection();
+    $id = (int)($body['id'] ?? 0);
+    if (!$id) sendJsonResponse(false, 'Thiếu job id.', [], 400);
+
+    $allowed = ['status', 'title', 'company', 'location', 'salary'];
+    $fields  = [];
+    $values  = [];
+    foreach ($allowed as $col) {
+        if (isset($body[$col])) {
+            $fields[] = "$col = ?";
+            $values[] = $body[$col];
+        }
+    }
+    if (empty($fields)) sendJsonResponse(false, 'Không có dữ liệu cập nhật.', [], 400);
+    $values[] = $id;
+    $db->prepare("UPDATE jobs SET " . implode(', ', $fields) . " WHERE id = ?")->execute($values);
+    sendJsonResponse(true, 'Cập nhật bài đăng thành công.');
+}
+
+// ============================================================
+// ADMIN — delete job
+// ============================================================
+if ($action === 'admin-delete-job') {
+    requireAdmin();
+    $db = getDatabaseConnection();
+    $id = (int)($body['id'] ?? 0);
+    if (!$id) sendJsonResponse(false, 'Thiếu job id.', [], 400);
+    $db->prepare("DELETE FROM jobs WHERE id = ?")->execute([$id]);
+    sendJsonResponse(true, 'Đã xóa bài đăng.');
+}
+
+// ============================================================
+// ADMIN — list categories (from categories table)
+// ============================================================
+if ($action === 'admin-get-categories') {
+    requireAdmin();
+    $db   = getDatabaseConnection();
+    $cats = $db->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
+    sendJsonResponse(true, 'OK', ['categories' => $cats]);
+}
+
+// ============================================================
+// ADMIN — add category
+// ============================================================
+if ($action === 'admin-add-category') {
+    requireAdmin();
+    $db   = getDatabaseConnection();
+    $name = trim($body['name'] ?? '');
+    $icon = trim($body['icon'] ?? '📂');
+    if ($name === '') sendJsonResponse(false, 'Tên danh mục không được để trống.', [], 400);
+    try {
+        $db->prepare("INSERT INTO categories (name, icon) VALUES (?, ?)")->execute([$name, $icon]);
+        $id = $db->lastInsertId();
+        sendJsonResponse(true, 'Thêm danh mục thành công.', ['id' => $id]);
+    } catch (\PDOException $e) {
+        sendJsonResponse(false, 'Danh mục đã tồn tại.', [], 409);
+    }
+}
+
+// ============================================================
+// ADMIN — update category
+// ============================================================
+if ($action === 'admin-update-category') {
+    requireAdmin();
+    $db   = getDatabaseConnection();
+    $id   = (int)($body['id'] ?? 0);
+    $name = trim($body['name'] ?? '');
+    $icon = trim($body['icon'] ?? '');
+    if (!$id || $name === '') sendJsonResponse(false, 'Thiếu dữ liệu.', [], 400);
+    $db->prepare("UPDATE categories SET name = ?, icon = ? WHERE id = ?")->execute([$name, $icon, $id]);
+    sendJsonResponse(true, 'Cập nhật danh mục thành công.');
+}
+
+// ============================================================
+// ADMIN — delete category
+// ============================================================
+if ($action === 'admin-delete-category') {
+    requireAdmin();
+    $db = getDatabaseConnection();
+    $id = (int)($body['id'] ?? 0);
+    if (!$id) sendJsonResponse(false, 'Thiếu id.', [], 400);
+    $db->prepare("UPDATE jobs SET category_id = NULL WHERE category_id = ?")->execute([$id]);
+    $db->prepare("DELETE FROM categories WHERE id = ?")->execute([$id]);
+    sendJsonResponse(true, 'Đã xóa danh mục.');
+}
+
 sendJsonResponse(false, "Action '$action' không tồn tại.", [], 404);
