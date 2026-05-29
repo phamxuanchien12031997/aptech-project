@@ -3,6 +3,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: http://localhost:3000');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -16,8 +17,8 @@ define('DB_PASS', '');
 define('MAIL_HOST', 'smtp.gmail.com');
 define('MAIL_PORT', 587);
 // ⚠️ UPDATE THESE WITH REAL CREDENTIALS
-define('MAIL_USER', 'tri.td.2777@aptechlearning.edu.vn');
-define('MAIL_PASS', 'kzez sufv tiet fypf');
+define('MAIL_USER', 'your-email@gmail.com');
+define('MAIL_PASS', 'ccjd yrhe dedu uzmx');
 define('MAIL_FROM', 'noreply@jobhot.vn');
 define('MAIL_FROM_NAME', 'JobHot');
 define('JWT_SECRET', 'JOBHOT_SECRET_KEY_2026_CHANGE_IN_PROD');
@@ -84,6 +85,45 @@ function createLoginToken(array $userInfo): string
     $signatureEncoded = rtrim(base64_encode($signatureRaw), '=');
 
     return $headerEncoded . '.' . $bodyEncoded . '.' . $signatureEncoded;
+}
+
+function getUserIdFromToken(): ?int
+{
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $tokenParts = explode('.', $matches[1]);
+        if (count($tokenParts) === 3) {
+            $payloadJson = base64_decode(str_pad($tokenParts[1], strlen($tokenParts[1]) + (4 - strlen($tokenParts[1]) % 4) % 4, '='));
+            $payload = json_decode($payloadJson, true);
+            if ($payload && isset($payload['id'])) {
+                return (int)$payload['id'];
+            }
+        }
+    }
+    
+    return null;
+}
+
+function requireAdmin(): void
+{
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    $userRole = null;
+
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $tokenParts = explode('.', $matches[1]);
+        if (count($tokenParts) === 3) {
+            $payloadJson = base64_decode(str_pad($tokenParts[1], strlen($tokenParts[1]) + (4 - strlen($tokenParts[1]) % 4) % 4, '='));
+            $payload = json_decode($payloadJson, true);
+            if ($payload && isset($payload['role'])) {
+                $userRole = $payload['role'];
+            }
+        }
+    }
+
+    if ($userRole !== 'admin') {
+        sendJsonResponse(false, 'Bạn không có quyền truy cập.', [], 403);
+    }
 }
 
 /**
@@ -252,8 +292,11 @@ if ($action === 'get-job') {
         sendJsonResponse(false, 'ID công việc không hợp lệ.', [], 400);
     }
 
+    $db = getDatabaseConnection();
+
+    // Get job details
     $sql = "SELECT * FROM jobs WHERE id = ?";
-    $statement = getDatabaseConnection()->prepare($sql);
+    $statement = $db->prepare($sql);
     $statement->execute([$jobId]);
     $job = $statement->fetch();
 
@@ -261,74 +304,107 @@ if ($action === 'get-job') {
         sendJsonResponse(false, 'Không tìm thấy công việc.', [], 404);
     }
 
-    // Helper: decode a JSON-encoded TEXT column into an array,
-    // or split by newline if it is plain text, or return empty array.
-    $decodeList = function ($value) {
-        if (!$value) return [];
-        $decoded = json_decode($value, true);
-        if (is_array($decoded)) return $decoded;
-        // Fallback: split by newline
-        $lines = array_filter(array_map('trim', explode("\n", $value)));
-        return array_values($lines);
-    };
+    // Get related jobs based on same category_id or location
+    $relatedSql = "SELECT id, title, company, salary, location 
+                   FROM jobs 
+                   WHERE id != ? 
+                   AND status = 'active'
+                   AND (category_id = ? OR location = ?)
+                   ORDER BY created_at DESC 
+                   LIMIT 3";
+    
+    $relatedStatement = $db->prepare($relatedSql);
+    $relatedStatement->execute([$jobId, $job['category_id'], $job['location']]);
+    $relatedJobs = $relatedStatement->fetchAll();
 
-    // Compute days left until deadline
-    $daysLeft = 0;
-    if (!empty($job['deadline'])) {
-        $deadlineTs = strtotime($job['deadline']);
-        $nowTs      = time();
-        $daysLeft   = max(0, (int)(($deadlineTs - $nowTs) / 86400));
+    // Add related jobs to response
+    $job['related_jobs'] = $relatedJobs;
+
+    sendJsonResponse(true, 'Lấy chi tiết công việc thành công.', $job);
+}
+
+if ($action === 'get-users') {
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    $userId = null;
+    $userRole = null;
+
+    // Debug logging
+    error_log("get-users: Authorization header = " . $authHeader);
+
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $tokenParts = explode('.', $matches[1]);
+        error_log("get-users: Token parts count = " . count($tokenParts));
+        if (count($tokenParts) === 3) {
+            $payloadJson = base64_decode(str_pad($tokenParts[1], strlen($tokenParts[1]) + (4 - strlen($tokenParts[1]) % 4) % 4, '='));
+            $payload = json_decode($payloadJson, true);
+            error_log("get-users: Payload = " . json_encode($payload));
+            if ($payload && isset($payload['id'], $payload['role'])) {
+                $userId = (int)$payload['id'];
+                $userRole = $payload['role'];
+                error_log("get-users: User ID = $userId, Role = $userRole");
+            }
+        }
     }
 
-    // Format deadline for display
-    $deadlineDisplay = '';
-    if (!empty($job['deadline'])) {
-        $deadlineDisplay = date('d/m/Y', strtotime($job['deadline']));
+    if (!$userId || $userRole !== 'admin') {
+        error_log("get-users: FORBIDDEN - userId=$userId, role=$userRole");
+        sendJsonResponse(false, 'Bạn không có quyền truy cập.', [], 403);
     }
 
-    $transformed = [
-        'id'              => $job['id'],
-        'title'           => $job['title'],
-        'company'         => $job['company'],
-        'logo'            => $job['logo'],
-        'location'        => $job['location'],
-        'type'            => $job['work_type'],
-        'level'           => $job['level'],
-        'salary'          => $job['salary'],
-        'description'     => $job['description'] ?? '',
-        'responsibilities'=> $decodeList($job['responsibilities']),
-        'requirements'    => $decodeList($job['requirements']),
-        'benefits'        => $decodeList($job['benefits']),
-        'quantity'        => $job['quantity'] ?? 1,
-        'gender'          => $job['gender'] ?? 'Không yêu cầu',
-        'experience'      => $job['experience'] ?? 'Không yêu cầu',
-        'deadline'        => $deadlineDisplay,
-        'daysLeft'        => $daysLeft,
-        'companyInfo'     => [
-            'name'        => $job['company'],
-            'size'        => $job['company_size'] ?? 'Chưa cập nhật',
-            'field'       => $job['company_field'] ?? 'Chưa cập nhật',
-            'address'     => $job['company_address'] ?? 'Chưa cập nhật',
-            'website'     => $job['company_website'] ?? '#',
-            'description' => $job['company_description'] ?? '',
-        ],
-    ];
+    $sql = "SELECT id, full_name, email, role, status, company, created_at FROM users ORDER BY created_at DESC";
+    $statement = getDatabaseConnection()->prepare($sql);
+    $statement->execute();
+    $users = $statement->fetchAll();
+    error_log("get-users: SUCCESS - Found " . count($users) . " users");
+    sendJsonResponse(true, 'Lấy danh sách người dùng thành công.', $users);
+}
 
-    sendJsonResponse(true, 'Lấy chi tiết công việc thành công.', $transformed);
+if ($action === 'get-employers') {
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    $userId = null;
+    $userRole = null;
+
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $tokenParts = explode('.', $matches[1]);
+        if (count($tokenParts) === 3) {
+            $payloadJson = base64_decode(str_pad($tokenParts[1], strlen($tokenParts[1]) + (4 - strlen($tokenParts[1]) % 4) % 4, '='));
+            $payload = json_decode($payloadJson, true);
+            if ($payload && isset($payload['id'], $payload['role'])) {
+                $userId = (int)$payload['id'];
+                $userRole = $payload['role'];
+            }
+        }
+    }
+
+    if (!$userId || $userRole !== 'admin') {
+        sendJsonResponse(false, 'Bạn không có quyền truy cập.', [], 403);
+    }
+
+    $sql = "SELECT id, full_name, email, company, status, created_at FROM users WHERE role = 'employer' ORDER BY created_at DESC";
+    $statement = getDatabaseConnection()->prepare($sql);
+    $statement->execute();
+    $employers = $statement->fetchAll();
+    sendJsonResponse(true, 'Lấy danh sách nhà tuyển dụng thành công.', $employers);
 }
 
 if ($action === 'get-categories') {
     try {
-        $sql = "SELECT DISTINCT category FROM jobs ORDER BY category ASC";
+        $sql = "
+            SELECT c.id, c.name, c.icon, COUNT(j.id) as count
+            FROM categories c
+            LEFT JOIN jobs j ON j.category_id = c.id AND j.status = 'active'
+            GROUP BY c.id, c.name, c.icon
+            ORDER BY c.name ASC
+        ";
         $statement = getDatabaseConnection()->prepare($sql);
         $statement->execute();
         $categoryRows = $statement->fetchAll();
 
         $categories = array_map(function ($row) {
             return [
-                'label' => $row['category'],
-                'icon' => '💼',
-                'count' => 0
+                'label' => $row['name'],
+                'icon' => $row['icon'],
+                'count' => (int)$row['count']
             ];
         }, $categoryRows);
 
@@ -476,6 +552,121 @@ if ($action === 'get-applied-jobs') {
     $stmt->execute([$userId]);
     $rows = $stmt->fetchAll();
     sendJsonResponse(true, 'Lay danh sach ung tuyen thanh cong.', $rows);
+}
+
+if ($action === 'get-user-profile') {
+    $uid = getUserIdFromToken();
+    if (!$uid) {
+        sendJsonResponse(false, 'Bạn cần đăng nhập.', [], 401);
+    }
+
+    $db = getDatabaseConnection();
+    $stmt = $db->prepare("
+        SELECT id, full_name, email, phone, dob, gender, address, 
+               position, experience, skills, industry, bio, education, avatar
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$uid]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        sendJsonResponse(false, 'Không tìm thấy thông tin người dùng.', [], 404);
+    }
+
+    sendJsonResponse(true, 'Lấy thông tin người dùng thành công.', $user);
+}
+
+if ($action === 'get-jobs-by-industry') {
+    $uid = getUserIdFromToken();
+    if (!$uid) {
+        sendJsonResponse(false, 'Bạn cần đăng nhập.', [], 401);
+    }
+
+    $db = getDatabaseConnection();
+    
+    // Get user's industry
+    $userStmt = $db->prepare("SELECT industry FROM users WHERE id = ? LIMIT 1");
+    $userStmt->execute([$uid]);
+    $user = $userStmt->fetch();
+    
+    if (!$user || !$user['industry']) {
+        // If no industry set, return all active jobs
+        $jobsStmt = $db->prepare("
+            SELECT j.*, c.name as category_name, c.icon as category_icon
+            FROM jobs j
+            LEFT JOIN categories c ON c.id = j.category_id
+            WHERE j.status = 'active'
+            ORDER BY j.created_at DESC
+        ");
+        $jobsStmt->execute();
+    } else {
+        // Get category ID from industry name
+        $catStmt = $db->prepare("SELECT id FROM categories WHERE name = ? LIMIT 1");
+        $catStmt->execute([$user['industry']]);
+        $category = $catStmt->fetch();
+        
+        if ($category) {
+            // Get jobs matching user's industry
+            $jobsStmt = $db->prepare("
+                SELECT j.*, c.name as category_name, c.icon as category_icon
+                FROM jobs j
+                LEFT JOIN categories c ON c.id = j.category_id
+                WHERE j.status = 'active' AND j.category_id = ?
+                ORDER BY j.created_at DESC
+            ");
+            $jobsStmt->execute([$category['id']]);
+        } else {
+            // Fallback to all active jobs if category not found
+            $jobsStmt = $db->prepare("
+                SELECT j.*, c.name as category_name, c.icon as category_icon
+                FROM jobs j
+                LEFT JOIN categories c ON c.id = j.category_id
+                WHERE j.status = 'active'
+                ORDER BY j.created_at DESC
+            ");
+            $jobsStmt->execute();
+        }
+    }
+    
+    $jobs = $jobsStmt->fetchAll();
+    sendJsonResponse(true, 'Lấy danh sách việc làm thành công.', [
+        'jobs' => $jobs,
+        'industry' => $user['industry'] ?? null
+    ]);
+}
+
+// ============================================================
+// Check application and saved status for a job
+// ============================================================
+if ($action === 'check-job-status') {
+    $uid = getUserIdFromToken();
+    if (!$uid) {
+        sendJsonResponse(false, 'Bạn cần đăng nhập.', [], 401);
+    }
+
+    $jobId = isset($_GET['job_id']) ? (int)$_GET['job_id'] : 0;
+    if (!$jobId) {
+        sendJsonResponse(false, 'Thiếu job_id.', [], 400);
+    }
+
+    $db = getDatabaseConnection();
+    
+    // Check if applied
+    $appliedStmt = $db->prepare("SELECT id FROM applications WHERE job_id = ? AND user_id = ? LIMIT 1");
+    $appliedStmt->execute([$jobId, $uid]);
+    $applied = $appliedStmt->fetch() !== false;
+    
+    // Check if saved
+    $savedStmt = $db->prepare("SELECT id FROM saved_jobs WHERE job_id = ? AND user_id = ? LIMIT 1");
+    $savedStmt->execute([$jobId, $uid]);
+    $saved = $savedStmt->fetch() !== false;
+    
+    sendJsonResponse(true, 'OK', [
+        'applied' => $applied,
+        'saved' => $saved
+    ]);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -1000,22 +1191,6 @@ if ($action === 'send-confirm-email') {
     sendJsonResponse(true, 'Email xác nhận đã được gửi.');
 }
 
-function getUserIdFromToken(): int
-{
-    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
-    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
-        $parts = explode('.', $matches[1]);
-        if (count($parts) === 3) {
-            $pad = (4 - strlen($parts[1]) % 4) % 4;
-            $json = base64_decode(str_pad($parts[1], strlen($parts[1]) + $pad, '='));
-            $data = json_decode($json, true);
-            if ($data && isset($data['id']))
-                return (int)$data['id'];
-        }
-    }
-    return 0;
-}
-
 if ($action === 'get-saved-jobs') {
     $uid = getUserIdFromToken();
     if (!$uid)
@@ -1062,6 +1237,76 @@ if ($action === 'unsave-job') {
     $db = getDatabaseConnection();
     $db->prepare("DELETE FROM saved_jobs WHERE job_id = ? AND user_id = ?")->execute([$jobId, $uid]);
     sendJsonResponse(true, 'Đã bỏ lưu.');
+}
+
+if ($action === 'approve-job') {
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    $userRole = null;
+
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $tokenParts = explode('.', $matches[1]);
+        if (count($tokenParts) === 3) {
+            $payloadJson = base64_decode(str_pad($tokenParts[1], strlen($tokenParts[1]) + (4 - strlen($tokenParts[1]) % 4) % 4, '='));
+            $payload = json_decode($payloadJson, true);
+            if ($payload && isset($payload['role'])) {
+                $userRole = $payload['role'];
+            }
+        }
+    }
+
+    if ($userRole !== 'admin') {
+        sendJsonResponse(false, 'Bạn không có quyền thực hiện thao tác này.', [], 403);
+    }
+
+    $jobId = isset($body['job_id']) ? (int)$body['job_id'] : 0;
+    if (!$jobId) {
+        sendJsonResponse(false, 'Thiếu job_id.', [], 400);
+    }
+
+    $db = getDatabaseConnection();
+    $stmt = $db->prepare("UPDATE jobs SET status = 'active' WHERE id = ?");
+    $stmt->execute([$jobId]);
+
+    if ($stmt->rowCount() > 0) {
+        sendJsonResponse(true, 'Đã duyệt tin tuyển dụng.');
+    } else {
+        sendJsonResponse(false, 'Không tìm thấy tin tuyển dụng.', [], 404);
+    }
+}
+
+if ($action === 'delete-job') {
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    $userRole = null;
+
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $tokenParts = explode('.', $matches[1]);
+        if (count($tokenParts) === 3) {
+            $payloadJson = base64_decode(str_pad($tokenParts[1], strlen($tokenParts[1]) + (4 - strlen($tokenParts[1]) % 4) % 4, '='));
+            $payload = json_decode($payloadJson, true);
+            if ($payload && isset($payload['role'])) {
+                $userRole = $payload['role'];
+            }
+        }
+    }
+
+    if ($userRole !== 'admin') {
+        sendJsonResponse(false, 'Bạn không có quyền thực hiện thao tác này.', [], 403);
+    }
+
+    $jobId = isset($body['job_id']) ? (int)$body['job_id'] : 0;
+    if (!$jobId) {
+        sendJsonResponse(false, 'Thiếu job_id.', [], 400);
+    }
+
+    $db = getDatabaseConnection();
+    $stmt = $db->prepare("DELETE FROM jobs WHERE id = ?");
+    $stmt->execute([$jobId]);
+
+    if ($stmt->rowCount() > 0) {
+        sendJsonResponse(true, 'Đã xóa tin tuyển dụng.');
+    } else {
+        sendJsonResponse(false, 'Không tìm thấy tin tuyển dụng.', [], 404);
+    }
 }
 
 if ($action === 'submit-rating') {
@@ -1165,29 +1410,6 @@ if ($action === 'update-profile') {
         'position' => $user['position'] ?? null,
     ]);
 }
-
-// ============================================================
-// ADMIN HELPER — decode token and assert role = admin
-// ============================================================
-function requireAdmin(): int
-{
-    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
-    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
-        $parts = explode('.', $matches[1]);
-        if (count($parts) === 3) {
-            $pad  = (4 - strlen($parts[1]) % 4) % 4;
-            $json = base64_decode(str_pad($parts[1], strlen($parts[1]) + $pad, '='));
-            $data = json_decode($json, true);
-            if ($data && isset($data['id']) && isset($data['role']) && $data['role'] === 'admin') {
-                return (int)$data['id'];
-            }
-        }
-    }
-    sendJsonResponse(false, 'Bạn không có quyền truy cập.', [], 403);
-    exit;
-}
-
-// (admin-get-stats, admin-get-users, admin-get-jobs, admin-get-categories moved above POST guard)
 
 // ============================================================
 // ADMIN — update user (edit name/email, lock/unlock)

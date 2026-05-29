@@ -2,46 +2,50 @@ import { useState } from 'react';
 
 const workTypes = [
     {
-        id: 'fulltime',
+        id: 'Full-time',
         label: 'Nhân viên chính thức'
     },
     {
-        id: 'parttime',
+        id: 'Part-time',
         label: 'Bán thời gian'
     },
     {
-        id: 'seasonal',
+        id: 'Seasonal',
         label: 'Nhân viên thời vụ'
     },
     {
-        id: 'freelancer',
+        id: 'Freelancer',
         label: 'Freelancer'
     },
     {
-        id: 'intern',
+        id: 'Intern',
         label: 'Thực tập sinh'
     },
 ];
 
 const levels = [
     {
-        id: 'fresher',
+        id: 'Mới tốt nghiệp',
         label: 'Mới tốt nghiệp'
     },
     {
-        id: 'staff',
+        id: 'Nhân viên',
         label: 'Nhân viên'
     },
     {
-        id: 'leader',
+        id: 'Trưởng nhóm',
         label: 'Trưởng nhóm'
     },
     {
-        id: 'manager',
-        label: 'Trưởng phòng'
+        id: 'Quản lý',
+        label: 'Quản lý'
     },
     {
-        id: 'director',
+        id: 'Senior',
+        label: 'Senior'
+    },
+    {
+        id: 'Giám đốc',
         label: 'Giám đốc'
     },
 ];
@@ -88,9 +92,20 @@ const sendFiltersToBackend = async (workType, level, locationName, onFilter) => 
     try {
         const response = await fetch(url);
         const data = await response.json();
-        onFilter(data);
+        console.log('Filter response:', data);
+
+        // Extract jobs array from response
+        if (data.success) {
+            const jobs = data.data?.jobs || data.jobs || [];
+            console.log('Filtered jobs:', jobs);
+            onFilter(jobs);
+        } else {
+            console.error('Filter failed:', data.message);
+            onFilter([]);
+        }
     } catch (error) {
         console.error('Failed to fetch jobs from backend:', error);
+        onFilter([]);
     }
 };
 

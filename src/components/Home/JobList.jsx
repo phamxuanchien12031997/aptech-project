@@ -49,15 +49,35 @@ const DefaultResults = () => {
     const [jobs, setJobs] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [userIndustry, setUserIndustry] = useState(null);
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+
         const fetchJobs = async () => {
             try {
-                const response = await fetch(API + '?action=get-jobs');
+                let response;
+
+                // If user is logged in, get jobs by their industry
+                if (token) {
+                    response = await fetch(API + '?action=get-jobs-by-industry', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } else {
+                    // If not logged in, get all jobs
+                    response = await fetch(API + '?action=get-jobs');
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
                     setJobs(data.data?.jobs || data.jobs || []);
+                    if (data.data?.industry) {
+                        setUserIndustry(data.data.industry);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching jobs:', error);
@@ -102,6 +122,11 @@ const DefaultResults = () => {
                 <div className="absolute -left-4 -bottom-6 w-28 h-28 bg-white/10 rounded-full" />
                 <div className="text-4xl font-black tracking-tight relative">JobHot</div>
                 <div className="text-blue-200 text-sm mt-1 relative">Tuyển dụng & tìm việc - Nhanh - Đúng - Chuẩn</div>
+                {userIndustry && (
+                    <div className="text-blue-100 text-xs mt-2 relative bg-white/20 px-3 py-1 rounded-full">
+                        🎯 Việc làm phù hợp với ngành: {userIndustry}
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-4 gap-3 mb-8">
@@ -116,7 +141,7 @@ const DefaultResults = () => {
                 })}
             </div>
 
-            <SectionHeader title="Việc làm tốt nhất" link="/jobs" />
+            <SectionHeader title={userIndustry ? `Việc làm phù hợp với bạn (${userIndustry})` : "Việc làm tốt nhất"} link="/jobs" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                 {jobs.map((job) => {
@@ -124,13 +149,17 @@ const DefaultResults = () => {
                 })}
             </div>
 
-            <SectionHeader title="Việc làm hấp dẫn" link="/jobs/featured" />
+            {featuredJobs.length > 0 && (
+                <>
+                    <SectionHeader title="Việc làm hấp dẫn" link="/jobs/featured" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {featuredJobs.map((job) => {
-                    return <JobCard key={job.id} job={job} />;
-                })}
-            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {featuredJobs.map((job) => {
+                            return <JobCard key={job.id} job={job} />;
+                        })}
+                    </div>
+                </>
+            )}
         </div>
     );
 };

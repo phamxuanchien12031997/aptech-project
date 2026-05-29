@@ -174,21 +174,89 @@ const JobDetailPage = () => {
     const [applied, setApplied] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [modalContent, setModalContent] = useState({ type: '', message: '' });
+    const [relatedJobs, setRelatedJobs] = useState([]);
 
 
     // ── Load job data on mount ──
     // Fetches job details from the backend API
 
     useEffect(function () {
+        // Scroll to top when job ID changes
+        window.scrollTo(0, 0);
+
         const fetchJob = async () => {
             try {
                 setLoading(true);
                 setError(null);
+                setRelatedJobs([]); // Reset related jobs
                 const response = await fetch(API + `?action=get-job&id=${id}`);
                 const data = await response.json();
 
                 if (data.success && data.data) {
-                    setJob(data.data);
+                    const jobData = data.data;
+
+                    // Calculate days left from deadline
+                    let daysLeft = 0;
+                    if (jobData.deadline) {
+                        const deadlineDate = new Date(jobData.deadline);
+                        const today = new Date();
+                        const diffTime = deadlineDate - today;
+                        daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                    }
+
+                    // Parse text fields into arrays
+                    const parseTextToArray = (text) => {
+                        if (!text) return [];
+                        return text.split('\n').filter(line => line.trim() !== '');
+                    };
+
+                    // Transform database data to match component expectations
+                    const transformedJob = {
+                        ...jobData,
+                        type: jobData.work_type || 'Full-time',
+                        daysLeft: daysLeft,
+                        responsibilities: parseTextToArray(jobData.responsibilities),
+                        requirements: parseTextToArray(jobData.requirements),
+                        benefits: parseTextToArray(jobData.benefits),
+                        companyInfo: {
+                            name: jobData.company,
+                            size: jobData.company_size || 'Chưa cập nhật',
+                            field: jobData.company_field || 'Chưa cập nhật',
+                            address: jobData.company_address || jobData.location,
+                            website: jobData.company_website || '#',
+                            description: jobData.company_description || 'Chưa có thông tin'
+                        }
+                    };
+
+                    setJob(transformedJob);
+
+                    // Set related jobs from API response
+                    if (jobData.related_jobs && Array.isArray(jobData.related_jobs)) {
+                        setRelatedJobs(jobData.related_jobs);
+                    }
+
+                    // Check application and saved status
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        try {
+                            const statusResponse = await fetch(API + `?action=check-job-status&job_id=${id}`, {
+                                headers: {
+                                    'Authorization': 'Bearer ' + token,
+                                }
+                            });
+                            const statusData = await statusResponse.json();
+                            console.log('Job status response:', statusData);
+                            if (statusData.success) {
+                                console.log('Applied:', statusData.data.applied, 'Saved:', statusData.data.saved);
+                                setApplied(statusData.data.applied);
+                                setSaved(statusData.data.saved);
+                            }
+                        } catch (err) {
+                            console.error('Error checking job status:', err);
+                        }
+                    }
                 } else {
                     setError('Job not found');
                     setTimeout(() => navigate('/'), 2000);
@@ -266,7 +334,11 @@ const JobDetailPage = () => {
 
     async function handleApply() {
         if (applied) {
-            alert('Bạn đã ứng tuyển công việc này rồi!');
+            setModalContent({
+                type: 'warning',
+                message: 'Bạn đã ứng tuyển công việc này rồi!'
+            });
+            setShowModal(true);
             return;
         }
         const token = localStorage.getItem('token');
@@ -283,13 +355,25 @@ const JobDetailPage = () => {
             const data = await res.json();
             if (data.success) {
                 setApplied(true);
-                alert('Ứng tuyển thành công! Nhà tuyển dụng sẽ liên hệ với bạn sớm.');
+                setModalContent({
+                    type: 'success',
+                    message: 'Ứng tuyển thành công! Nhà tuyển dụng sẽ liên hệ với bạn sớm.'
+                });
+                setShowModal(true);
             } else {
-                alert(data.message || 'Ứng tuyển thất bại. Vui lòng thử lại.');
+                setModalContent({
+                    type: 'error',
+                    message: data.message || 'Ứng tuyển thất bại. Vui lòng thử lại.'
+                });
+                setShowModal(true);
             }
         } catch (err) {
             console.error('Error applying:', err);
-            alert('Lỗi kết nối. Vui lòng thử lại.');
+            setModalContent({
+                type: 'error',
+                message: 'Lỗi kết nối. Vui lòng thử lại.'
+            });
+            setShowModal(true);
         }
     }
 
@@ -308,6 +392,74 @@ const JobDetailPage = () => {
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Header />
+
+            {/* Modal Popup */}
+            {showModal && (
+                <div
+                    className="fixed inset-0 flex items-center justify-center z-9999 p-4"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)' }}
+                    onClick={() => setShowModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-md relative animate-fadeIn"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Close button */}
+                        <button
+                            onClick={() => setShowModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <div className="text-center mb-6">
+                            {/* Icon */}
+                            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${modalContent.type === 'success' ? 'bg-green-100' :
+                                modalContent.type === 'error' ? 'bg-red-100' :
+                                    'bg-yellow-100'
+                                }`}>
+                                {modalContent.type === 'success' && (
+                                    <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                                {modalContent.type === 'error' && (
+                                    <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                )}
+                                {modalContent.type === 'warning' && (
+                                    <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                )}
+                            </div>
+
+                            {/* Title */}
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                {modalContent.type === 'success' && 'Thành công!'}
+                                {modalContent.type === 'error' && 'Có lỗi xảy ra'}
+                                {modalContent.type === 'warning' && 'Thông báo'}
+                            </h2>
+
+                            {/* Message */}
+                            <p className="text-gray-600 text-sm leading-relaxed">
+                                {modalContent.message}
+                            </p>
+                        </div>
+
+                        {/* OK Button */}
+                        <button
+                            onClick={() => setShowModal(false)}
+                            className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors shadow-md hover:shadow-lg"
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Red urgent banner — only shown when deadline is within 7 days */}
             {isUrgent && (
@@ -379,50 +531,58 @@ const JobDetailPage = () => {
 
                         {/* Job description */}
                         <Section icon="📋" title="Mô tả công việc">
-                            <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: job.description }} />
+                            <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                                {job.description || 'Chưa có mô tả công việc'}
+                            </div>
                         </Section>
 
                         {/* Responsibilities */}
-                        <Section icon="✅" title="Trách nhiệm công việc">
-                            <ul className="space-y-2">
-                                {job.responsibilities.map(function (item, index) {
-                                    return (
-                                        <li key={index} className="flex items-start gap-3">
-                                            <span className="text-purple-600 mt-1">•</span>
-                                            <span className="text-gray-700">{item}</span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </Section>
+                        {job.responsibilities && job.responsibilities.length > 0 && (
+                            <Section icon="✅" title="Trách nhiệm công việc">
+                                <ul className="space-y-2">
+                                    {job.responsibilities.map(function (item, index) {
+                                        return (
+                                            <li key={index} className="flex items-start gap-3">
+                                                <span className="text-purple-600 mt-1">•</span>
+                                                <span className="text-gray-700">{item}</span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </Section>
+                        )}
 
                         {/* Requirements */}
-                        <Section icon="📌" title="Yêu cầu công việc">
-                            <ul className="space-y-2">
-                                {job.requirements.map(function (item, index) {
-                                    return (
-                                        <li key={index} className="flex items-start gap-3">
-                                            <span className="text-purple-600 mt-1">•</span>
-                                            <span className="text-gray-700">{item}</span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </Section>
+                        {job.requirements && job.requirements.length > 0 && (
+                            <Section icon="📌" title="Yêu cầu công việc">
+                                <ul className="space-y-2">
+                                    {job.requirements.map(function (item, index) {
+                                        return (
+                                            <li key={index} className="flex items-start gap-3">
+                                                <span className="text-purple-600 mt-1">•</span>
+                                                <span className="text-gray-700">{item}</span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </Section>
+                        )}
 
                         {/* Benefits */}
-                        <Section icon="🎁" title="Quyền lợi">
-                            <ul className="space-y-2">
-                                {job.benefits.map(function (item, index) {
-                                    return (
-                                        <li key={index} className="flex items-start gap-3">
-                                            <span className="text-green-600 mt-1">✓</span>
-                                            <span className="text-gray-700">{item}</span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </Section>
+                        {job.benefits && job.benefits.length > 0 && (
+                            <Section icon="🎁" title="Quyền lợi">
+                                <ul className="space-y-2">
+                                    {job.benefits.map(function (item, index) {
+                                        return (
+                                            <li key={index} className="flex items-start gap-3">
+                                                <span className="text-green-600 mt-1">✓</span>
+                                                <span className="text-gray-700">{item}</span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </Section>
+                        )}
 
                         {/* Company info */}
                         <Section icon="🏢" title="Thông tin công ty">
@@ -483,25 +643,41 @@ const JobDetailPage = () => {
                             </button>
                         </div>
 
-                        {/* Related jobs (static placeholders) */}
+                        {/* Related jobs */}
                         <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
                             <h3 className="font-bold text-gray-800 mb-4">Việc làm liên quan</h3>
                             <div className="space-y-3">
-                                <div className="p-3 border border-gray-100 rounded-lg hover:border-purple-300 cursor-pointer transition-all">
-                                    <div className="font-semibold text-sm text-gray-800 mb-1">Senior Developer</div>
-                                    <div className="text-xs text-gray-500">Công ty ABC</div>
-                                    <div className="text-xs text-green-600 font-medium mt-2">20-30 triệu</div>
-                                </div>
-                                <div className="p-3 border border-gray-100 rounded-lg hover:border-purple-300 cursor-pointer transition-all">
-                                    <div className="font-semibold text-sm text-gray-800 mb-1">Project Manager</div>
-                                    <div className="text-xs text-gray-500">Công ty XYZ</div>
-                                    <div className="text-xs text-green-600 font-medium mt-2">25-35 triệu</div>
-                                </div>
-                                <div className="p-3 border border-gray-100 rounded-lg hover:border-purple-300 cursor-pointer transition-all">
-                                    <div className="font-semibold text-sm text-gray-800 mb-1">Business Analyst</div>
-                                    <div className="text-xs text-gray-500">Công ty DEF</div>
-                                    <div className="text-xs text-green-600 font-medium mt-2">15-20 triệu</div>
-                                </div>
+                                {relatedJobs.length > 0 ? (
+                                    relatedJobs.map((relatedJob) => (
+                                        <div
+                                            key={relatedJob.id}
+                                            onClick={() => {
+                                                window.scrollTo(0, 0);
+                                                navigate(`/jobs/${relatedJob.id}`);
+                                            }}
+                                            className="p-3 border border-gray-100 rounded-lg hover:border-purple-300 cursor-pointer transition-all hover:shadow-md"
+                                        >
+                                            <div className="font-semibold text-sm text-gray-800 mb-1 line-clamp-1">
+                                                {relatedJob.title}
+                                            </div>
+                                            <div className="text-xs text-gray-500 mb-2 line-clamp-1">
+                                                {relatedJob.company}
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-xs text-green-600 font-medium">
+                                                    {relatedJob.salary}
+                                                </div>
+                                                <div className="text-xs text-gray-400">
+                                                    📍 {relatedJob.location}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-4 text-gray-500 text-sm">
+                                        Không có việc làm liên quan
+                                    </div>
+                                )}
                             </div>
                         </div>
 
