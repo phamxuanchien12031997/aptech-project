@@ -673,7 +673,7 @@ if ($action === 'forgot-password') {
 
     $otpCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-    $expiresAt = date('Y-m-d H:i:s', time() + 300);
+    $expiresAt = gmdate('Y-m-d H:i:s', time() + 300);
 
     // FIX #2: Use transaction to ensure consistency
     // expireOldOtps is INSIDE the transaction so it rolls back if email fails,
@@ -731,15 +731,15 @@ if ($action === 'verify-otp') {
 
     $db = getDatabaseConnection();
     $findOtp = $db->prepare("
-		SELECT id
-		FROM otp_tokens
-		WHERE email = ?
-			AND otp = ?
-			AND used = 0
-			AND expires_at > NOW()
-		ORDER BY created_at DESC
-		LIMIT 1
-	");
+        SELECT id
+        FROM otp_tokens
+        WHERE email = ?
+            AND otp = ?
+            AND used = 0
+            AND expires_at > UTC_TIMESTAMP()
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
 
     $findOtp->execute([
         $email,
