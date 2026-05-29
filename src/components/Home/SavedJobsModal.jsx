@@ -26,7 +26,7 @@ const SavedJobsModal = ({ isOpen, onClose }) => {
             });
             const data = await response.json();
             if (data.success) {
-                setSavedJobs(data.jobs || []);
+                setSavedJobs((data.data && data.data.jobs) || data.jobs || []);
             } else {
                 console.error(data.message);
                 setSavedJobs([]);

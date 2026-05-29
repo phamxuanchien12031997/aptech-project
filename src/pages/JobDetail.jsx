@@ -239,26 +239,57 @@ const JobDetailPage = () => {
 
 
     // ── handleSave ──
-    // Toggles the saved state on/off.
+    // Toggles the saved state in the database.
 
-    function handleSave() {
-        if (saved) {
-            setSaved(false);
-        } else {
-            setSaved(true);
+    async function handleSave() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const action = saved ? 'unsave-job' : 'save-job';
+        try {
+            await fetch(API + '?action=' + action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify({ job_id: Number(id) }),
+            });
+            setSaved(!saved);
+        } catch (err) {
+            console.error('Error toggling save:', err);
         }
     }
 
 
     // ── handleApply ──
-    // Marks the job as applied. Shows an alert if already applied.
+    // Submits an application via the API.
 
-    function handleApply() {
+    async function handleApply() {
         if (applied) {
             alert('Bạn đã ứng tuyển công việc này rồi!');
-        } else {
-            setApplied(true);
-            alert('Ứng tuyển thành công! Nhà tuyển dụng sẽ liên hệ với bạn sớm.');
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const res = await fetch(API + '?action=apply-job', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify({ job_id: Number(id) }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setApplied(true);
+                alert('Ứng tuyển thành công! Nhà tuyển dụng sẽ liên hệ với bạn sớm.');
+            } else {
+                alert(data.message || 'Ứng tuyển thất bại. Vui lòng thử lại.');
+            }
+        } catch (err) {
+            console.error('Error applying:', err);
+            alert('Lỗi kết nối. Vui lòng thử lại.');
         }
     }
 

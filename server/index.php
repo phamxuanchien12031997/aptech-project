@@ -261,7 +261,60 @@ if ($action === 'get-job') {
         sendJsonResponse(false, 'Không tìm thấy công việc.', [], 404);
     }
 
-    sendJsonResponse(true, 'Lấy chi tiết công việc thành công.', $job);
+    // Helper: decode a JSON-encoded TEXT column into an array,
+    // or split by newline if it is plain text, or return empty array.
+    $decodeList = function ($value) {
+        if (!$value) return [];
+        $decoded = json_decode($value, true);
+        if (is_array($decoded)) return $decoded;
+        // Fallback: split by newline
+        $lines = array_filter(array_map('trim', explode("\n", $value)));
+        return array_values($lines);
+    };
+
+    // Compute days left until deadline
+    $daysLeft = 0;
+    if (!empty($job['deadline'])) {
+        $deadlineTs = strtotime($job['deadline']);
+        $nowTs      = time();
+        $daysLeft   = max(0, (int)(($deadlineTs - $nowTs) / 86400));
+    }
+
+    // Format deadline for display
+    $deadlineDisplay = '';
+    if (!empty($job['deadline'])) {
+        $deadlineDisplay = date('d/m/Y', strtotime($job['deadline']));
+    }
+
+    $transformed = [
+        'id'              => $job['id'],
+        'title'           => $job['title'],
+        'company'         => $job['company'],
+        'logo'            => $job['logo'],
+        'location'        => $job['location'],
+        'type'            => $job['work_type'],
+        'level'           => $job['level'],
+        'salary'          => $job['salary'],
+        'description'     => $job['description'] ?? '',
+        'responsibilities'=> $decodeList($job['responsibilities']),
+        'requirements'    => $decodeList($job['requirements']),
+        'benefits'        => $decodeList($job['benefits']),
+        'quantity'        => $job['quantity'] ?? 1,
+        'gender'          => $job['gender'] ?? 'Không yêu cầu',
+        'experience'      => $job['experience'] ?? 'Không yêu cầu',
+        'deadline'        => $deadlineDisplay,
+        'daysLeft'        => $daysLeft,
+        'companyInfo'     => [
+            'name'        => $job['company'],
+            'size'        => $job['company_size'] ?? 'Chưa cập nhật',
+            'field'       => $job['company_field'] ?? 'Chưa cập nhật',
+            'address'     => $job['company_address'] ?? 'Chưa cập nhật',
+            'website'     => $job['company_website'] ?? '#',
+            'description' => $job['company_description'] ?? '',
+        ],
+    ];
+
+    sendJsonResponse(true, 'Lấy chi tiết công việc thành công.', $transformed);
 }
 
 if ($action === 'get-categories') {
@@ -359,8 +412,74 @@ if ($action === 'admin-get-categories') {
     sendJsonResponse(true, 'OK', ['categories' => $cats]);
 }
 
+// ── GET-safe authenticated actions (must be before the POST gate) ──
+
+if ($action === 'get-saved-jobs') {
+    $uid = getUserIdFromToken();
+    if (!$uid)
+        sendJsonResponse(false, 'Ban can dang nhap.', [], 401);
+
+    $db = getDatabaseConnection();
+    $stmt = $db->prepare("
+        SELECT s.id, s.job_id, s.saved_at,
+               j.title, j.company, j.location, j.salary, j.work_type, j.level, j.logo,
+               j.deadline
+        FROM saved_jobs s
+        JOIN jobs j ON j.id = s.job_id
+        WHERE s.user_id = ?
+        ORDER BY s.saved_at DESC
+    ");
+    $stmt->execute([$uid]);
+    $rows = $stmt->fetchAll();
+
+    $jobs = array_map(function ($row) {
+        $daysLeft = 0;
+        if (!empty($row['deadline'])) {
+            $daysLeft = max(0, (int)((strtotime($row['deadline']) - time()) / 86400));
+        }
+        $row['daysLeft'] = $daysLeft;
+        $row['id']       = $row['job_id'];
+        return $row;
+    }, $rows);
+
+    sendJsonResponse(true, 'OK', ['jobs' => $jobs]);
+}
+
+if ($action === 'get-applied-jobs') {
+    $authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
+    $userId = null;
+
+    if (preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+        $tokenParts = explode('.', $matches[1]);
+        if (count($tokenParts) === 3) {
+            $payloadJson = base64_decode(str_pad($tokenParts[1], strlen($tokenParts[1]) + (4 - strlen($tokenParts[1]) % 4) % 4, '='));
+            $payload = json_decode($payloadJson, true);
+            if ($payload && isset($payload['id'])) {
+                $userId = (int)$payload['id'];
+            }
+        }
+    }
+
+    if (!$userId) {
+        sendJsonResponse(false, 'Ban can dang nhap.', [], 401);
+    }
+
+    $db = getDatabaseConnection();
+    $stmt = $db->prepare("
+        SELECT a.id, a.job_id, a.status, a.applied_at,
+               j.title, j.company, j.location, j.salary, j.logo
+        FROM applications a
+        JOIN jobs j ON j.id = a.job_id
+        WHERE a.user_id = ?
+        ORDER BY a.applied_at DESC
+    ");
+    $stmt->execute([$userId]);
+    $rows = $stmt->fetchAll();
+    sendJsonResponse(true, 'Lay danh sach ung tuyen thanh cong.', $rows);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    sendJsonResponse(false, 'Chỉ hỗ trợ POST.', [], 405);
+    sendJsonResponse(false, 'Chi ho tro POST.', [], 405);
 }
 
 $rawBody = file_get_contents('php://input');
