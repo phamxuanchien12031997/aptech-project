@@ -294,6 +294,71 @@ if ($action === 'get-categories') {
     }
 }
 
+// ── Admin read-only actions (GET, require admin token) ───────
+if ($action === 'admin-get-stats') {
+    requireAdmin();
+    $db = getDatabaseConnection();
+    $totalJobs      = (int)$db->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
+    $activeJobs     = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'active'")->fetchColumn();
+    $pendingJobs    = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'pending'")->fetchColumn();
+    $totalUsers     = (int)$db->query("SELECT COUNT(*) FROM users WHERE role != 'admin'")->fetchColumn();
+    $totalEmployers = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'employer'")->fetchColumn();
+    $totalSeekers   = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'user'")->fetchColumn();
+    $totalCategories= (int)$db->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+    $totalApplications = (int)$db->query("SELECT COUNT(*) FROM applications")->fetchColumn();
+    $catStats = $db->query("
+        SELECT c.name, c.icon, COUNT(j.id) as job_count
+        FROM categories c
+        LEFT JOIN jobs j ON j.category_id = c.id
+        GROUP BY c.id, c.name, c.icon
+        ORDER BY job_count DESC
+    ")->fetchAll();
+    sendJsonResponse(true, 'OK', [
+        'totalJobs'         => $totalJobs,
+        'activeJobs'        => $activeJobs,
+        'pendingJobs'       => $pendingJobs,
+        'totalUsers'        => $totalUsers,
+        'totalEmployers'    => $totalEmployers,
+        'totalSeekers'      => $totalSeekers,
+        'totalCategories'   => $totalCategories,
+        'totalApplications' => $totalApplications,
+        'categoryStats'     => $catStats,
+    ]);
+}
+
+if ($action === 'admin-get-users') {
+    requireAdmin();
+    $db    = getDatabaseConnection();
+    $users = $db->query("
+        SELECT id, full_name, email, role, status, company, position, created_at
+        FROM users
+        WHERE role != 'admin'
+        ORDER BY created_at DESC
+    ")->fetchAll();
+    sendJsonResponse(true, 'OK', ['users' => $users]);
+}
+
+if ($action === 'admin-get-jobs') {
+    requireAdmin();
+    $db   = getDatabaseConnection();
+    $jobs = $db->query("
+        SELECT j.id, j.title, j.company, j.location, j.work_type, j.level,
+               j.salary, j.status, j.created_at, j.deadline, j.applicants,
+               c.name AS category_name, c.icon AS category_icon
+        FROM jobs j
+        LEFT JOIN categories c ON c.id = j.category_id
+        ORDER BY j.created_at DESC
+    ")->fetchAll();
+    sendJsonResponse(true, 'OK', ['jobs' => $jobs]);
+}
+
+if ($action === 'admin-get-categories') {
+    requireAdmin();
+    $db   = getDatabaseConnection();
+    $cats = $db->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
+    sendJsonResponse(true, 'OK', ['categories' => $cats]);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendJsonResponse(false, 'Chỉ hỗ trợ POST.', [], 405);
 }
@@ -1003,58 +1068,7 @@ function requireAdmin(): int
     exit;
 }
 
-// ============================================================
-// ADMIN — enhanced stats
-// ============================================================
-if ($action === 'admin-get-stats') {
-    requireAdmin();
-    $db = getDatabaseConnection();
-
-    $totalJobs      = (int)$db->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
-    $activeJobs     = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'active'")->fetchColumn();
-    $pendingJobs    = (int)$db->query("SELECT COUNT(*) FROM jobs WHERE status = 'pending'")->fetchColumn();
-    $totalUsers     = (int)$db->query("SELECT COUNT(*) FROM users WHERE role != 'admin'")->fetchColumn();
-    $totalEmployers = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'employer'")->fetchColumn();
-    $totalSeekers   = (int)$db->query("SELECT COUNT(*) FROM users WHERE role = 'user'")->fetchColumn();
-    $totalCategories= (int)$db->query("SELECT COUNT(*) FROM categories")->fetchColumn();
-    $totalApplications = (int)$db->query("SELECT COUNT(*) FROM applications")->fetchColumn();
-
-    // Jobs per category
-    $catStats = $db->query("
-        SELECT c.name, c.icon, COUNT(j.id) as job_count
-        FROM categories c
-        LEFT JOIN jobs j ON j.category_id = c.id
-        GROUP BY c.id, c.name, c.icon
-        ORDER BY job_count DESC
-    ")->fetchAll();
-
-    sendJsonResponse(true, 'OK', [
-        'totalJobs'        => $totalJobs,
-        'activeJobs'       => $activeJobs,
-        'pendingJobs'      => $pendingJobs,
-        'totalUsers'       => $totalUsers,
-        'totalEmployers'   => $totalEmployers,
-        'totalSeekers'     => $totalSeekers,
-        'totalCategories'  => $totalCategories,
-        'totalApplications'=> $totalApplications,
-        'categoryStats'    => $catStats,
-    ]);
-}
-
-// ============================================================
-// ADMIN — list all users
-// ============================================================
-if ($action === 'admin-get-users') {
-    requireAdmin();
-    $db = getDatabaseConnection();
-    $users = $db->query("
-        SELECT id, full_name, email, role, status, company, position, created_at
-        FROM users
-        WHERE role != 'admin'
-        ORDER BY created_at DESC
-    ")->fetchAll();
-    sendJsonResponse(true, 'OK', ['users' => $users]);
-}
+// (admin-get-stats, admin-get-users, admin-get-jobs, admin-get-categories moved above POST guard)
 
 // ============================================================
 // ADMIN — update user (edit name/email, lock/unlock)
@@ -1093,22 +1107,7 @@ if ($action === 'admin-delete-user') {
     sendJsonResponse(true, 'Đã xóa người dùng.');
 }
 
-// ============================================================
-// ADMIN — list all jobs (all statuses)
-// ============================================================
-if ($action === 'admin-get-jobs') {
-    requireAdmin();
-    $db   = getDatabaseConnection();
-    $jobs = $db->query("
-        SELECT j.id, j.title, j.company, j.location, j.work_type, j.level,
-               j.salary, j.status, j.created_at, j.deadline, j.applicants,
-               c.name AS category_name, c.icon AS category_icon
-        FROM jobs j
-        LEFT JOIN categories c ON c.id = j.category_id
-        ORDER BY j.created_at DESC
-    ")->fetchAll();
-    sendJsonResponse(true, 'OK', ['jobs' => $jobs]);
-}
+// (admin-get-jobs moved above POST guard)
 
 // ============================================================
 // ADMIN — update job status / fields
@@ -1146,15 +1145,7 @@ if ($action === 'admin-delete-job') {
     sendJsonResponse(true, 'Đã xóa bài đăng.');
 }
 
-// ============================================================
-// ADMIN — list categories (from categories table)
-// ============================================================
-if ($action === 'admin-get-categories') {
-    requireAdmin();
-    $db   = getDatabaseConnection();
-    $cats = $db->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
-    sendJsonResponse(true, 'OK', ['categories' => $cats]);
-}
+// (admin-get-categories moved above POST guard)
 
 // ============================================================
 // ADMIN — add category
