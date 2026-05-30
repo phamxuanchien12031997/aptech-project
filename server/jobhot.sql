@@ -60,7 +60,8 @@ IF NOT EXISTS users
     education   VARCHAR(255) DEFAULT NULL,
     cv_data     LONGTEXT     DEFAULT NULL,
     cv_name     VARCHAR(255) DEFAULT NULL,
-(255) DEFAULT NULL,
+    website     VARCHAR(255) DEFAULT NULL,
+    company_size VARCHAR(50) DEFAULT NULL,
 
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -607,3 +608,12 @@ VALUES
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS cv_data LONGTEXT DEFAULT NULL,
     ADD COLUMN IF NOT EXISTS cv_name VARCHAR(255) DEFAULT NULL;
+
+
+-- ============================================================
+-- MIGRATION: Add employer profile columns to users table
+-- Run this if upgrading from an existing database
+-- ============================================================
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS website VARCHAR(255) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS company_size VARCHAR(50) DEFAULT NULL;

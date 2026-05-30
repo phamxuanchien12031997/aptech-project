@@ -311,7 +311,7 @@ const SpinnerDot = () => {
     );
 }
 
-const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
+const Sidebar = ({ activeTab, setActiveTab, onLogout, companyName }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef();
 
@@ -398,9 +398,9 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
             <div style={{ padding: "12px 12px", borderTop: "1px solid #f3f4f6", position: "relative" }} ref={menuRef}>
 
                 <button onClick={handleMenuToggle} style={getMenuToggleButtonStyle(menuOpen)}>
-                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>CT</div>
+                    <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{companyName ? companyName.split(' ').slice(-2).map(function(w){return w[0];}).join('').toUpperCase() : 'CT'}</div>
                     <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Công ty JobHot</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{companyName || 'Công ty của bạn'}</div>
                         <div style={{ fontSize: 11, color: "#9ca3af" }}>Nhà tuyển dụng</div>
                     </div>
                     <span style={getChevronStyle(menuOpen)}>▲</span>
@@ -409,7 +409,7 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout }) => {
                 {menuOpen && (
                     <div style={{ position: "absolute", bottom: "calc(100% - 8px)", left: 12, right: 12, background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", overflow: "hidden", zIndex: 50 }}>
                         <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #f3f4f6" }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>Công ty JobHot</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{companyName || 'Công ty của bạn'}</div>
                             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>hr@jobhot.vn</div>
                         </div>
 
@@ -1471,30 +1471,101 @@ function TalentTab() {
 //  CompanyTab 
 // A form for editing the employer's company profile.
 
-function CompanyTab() {
-    const [name, setName] = useState("Công ty JobHot");
-    const [description, setDescription] = useState("Nền tảng tuyển dụng hàng đầu Việt Nam, kết nối hàng triệu ứng viên với các nhà tuyển dụng uy tín trên cả nước.");
-    const [address, setAddress] = useState("Tòa nhà FLC, 18 Phạm Hùng, Nam Từ Liêm, Hà Nội");
-    const [website, setWebsite] = useState("https://jobhot.vn");
-    const [size, setSize] = useState("50-100 nhân viên");
-    const [industry, setIndustry] = useState("Công nghệ thông tin");
-    const [email, setEmail] = useState("hr@jobhot.vn");
-    const [phone, setPhone] = useState("024 1234 5678");
-    const [saved, setSaved] = useState(false); // true for 2.5s after saving
+function CompanyTab({ onCompanyNameChange }) {
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [address, setAddress] = useState('');
+    const [website, setWebsite] = useState('');
+    const [size, setSize] = useState('');
+    const [industry, setIndustry] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [error, setError] = useState('');
 
-    // Hiển thị "Đã lưu!" trong 2.5 giây sau khi lưu thành công
-    function handleSave(event) {
+    // Load employer profile from server on mount
+    useEffect(function () {
+        var token = localStorage.getItem('token');
+        if (!token) { setLoading(false); return; }
+
+        fetch('/server/index.php?action=get-employer-profile', {
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success && data.data) {
+                    var u = data.data;
+                    // company column holds the company name for employers
+                    setName(u.company || '');
+                    setEmail(u.email || '');
+                    setPhone(u.phone || '');
+                    setAddress(u.address || '');
+                    setWebsite(u.website || '');
+                    setSize(u.company_size || '');
+                    setIndustry(u.industry || '');
+                    setDescription(u.bio || '');
+                }
+            })
+            .catch(function () { setError('Không thể tải thông tin công ty.'); })
+            .finally(function () { setLoading(false); });
+    }, []);
+
+    async function handleSave(event) {
         event.preventDefault();
-        setSaved(true);
-        setTimeout(function () { setSaved(false); }, 2500);
+        setError('');
+        setSaving(true);
+
+        var token = localStorage.getItem('token');
+        try {
+            var res = await fetch('/server/index.php?action=update-employer-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({
+                    company: name,
+                    email: email,
+                    phone: phone,
+                    address: address,
+                    website: website,
+                    company_size: size,
+                    industry: industry,
+                    bio: description,
+                }),
+            });
+            var data = await res.json();
+            if (!data.success) {
+                setError(data.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
+            } else {
+                setSaved(true);
+                // Update localStorage so sidebar reflects the new name immediately
+                localStorage.setItem('company', name);
+                if (onCompanyNameChange) onCompanyNameChange(name);
+                setTimeout(function () { setSaved(false); }, 2500);
+            }
+        } catch (_) {
+            setError('Không thể kết nối tới máy chủ.');
+        } finally {
+            setSaving(false);
+        }
     }
 
     // Xác định chữ nút lưu
-    let saveButtonLabel;
-    if (saved) {
-        saveButtonLabel = "✓ Đã lưu!";
+    var saveButtonLabel;
+    if (saving) {
+        saveButtonLabel = 'Đang lưu...';
+    } else if (saved) {
+        saveButtonLabel = '✓ Đã lưu!';
     } else {
-        saveButtonLabel = "Lưu thay đổi";
+        saveButtonLabel = 'Lưu thay đổi';
+    }
+
+    if (loading) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+                <div style={{ color: '#6b7280' }}>Đang tải thông tin...</div>
+            </div>
+        );
     }
 
     return (
@@ -1503,13 +1574,19 @@ function CompanyTab() {
             {/* Company logo + name header */}
             <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 28 }}>
                 <div style={{ width: 68, height: 68, borderRadius: 16, background: "#7c3aed", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 22, fontWeight: 700 }}>
-                    CT
+                    {name ? name.split(' ').slice(-2).map(function (w) { return w[0]; }).join('').toUpperCase() : 'CT'}
                 </div>
                 <div>
-                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" }}>{name}</h2>
-                    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>{industry} · {size}</div>
+                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" }}>{name || 'Công ty của bạn'}</h2>
+                    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>{industry || 'Chưa cập nhật ngành'} · {size || 'Chưa cập nhật quy mô'}</div>
                 </div>
             </div>
+
+            {error && (
+                <div style={{ marginBottom: 16, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 13 }}>
+                    ⚠️ {error}
+                </div>
+            )}
 
             <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
 
@@ -1562,9 +1639,10 @@ function CompanyTab() {
                 {/* Save button */}
                 <button
                     type="submit"
-                    style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: "#7c3aed", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "fit-content", transition: "background 0.15s" }}
-                    onMouseEnter={function (e) { e.currentTarget.style.background = "#6d28d9"; }}
-                    onMouseLeave={function (e) { e.currentTarget.style.background = "#7c3aed"; }}
+                    disabled={saving}
+                    style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: saved ? "#16a34a" : "#7c3aed", color: "#fff", fontSize: 14, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", width: "fit-content", transition: "background 0.15s", opacity: saving ? 0.7 : 1 }}
+                    onMouseEnter={function (e) { if (!saving && !saved) e.currentTarget.style.background = "#6d28d9"; }}
+                    onMouseLeave={function (e) { if (!saving && !saved) e.currentTarget.style.background = "#7c3aed"; }}
                 >
                     {saveButtonLabel}
                 </button>
@@ -1585,6 +1663,7 @@ export default function EmployerDashboard() {
     const [jobs, setJobs] = useState([]);
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [companyName, setCompanyName] = useState(localStorage.getItem('company') || '');
 
     // Maps tab ids to the header title shown in the top bar
     const TAB_TITLES = {
@@ -1668,7 +1747,7 @@ export default function EmployerDashboard() {
             <div style={{ display: "flex", height: "100vh", background: "#f9fafb", overflow: "hidden" }}>
 
                 {/* Left sidebar navigation */}
-                <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+                <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} companyName={companyName} />
 
                 {/* Main content area */}
                 <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
@@ -1695,7 +1774,7 @@ export default function EmployerDashboard() {
                         {activeTab === "jobs" && <JobsTab jobs={jobs} setJobs={setJobs} />}
                         {activeTab === "candidates" && <CandidatesTab candidates={candidates} setCandidates={setCandidates} jobs={jobs} />}
                         {activeTab === "talent" && <TalentTab />}
-                        {activeTab === "company" && <CompanyTab />}
+                        {activeTab === "company" && <CompanyTab onCompanyNameChange={setCompanyName} />}
                     </div>
 
                 </main>

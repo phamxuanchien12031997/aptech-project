@@ -587,6 +587,28 @@ if ($action === 'get-user-profile') {
     sendJsonResponse(true, 'Lấy thông tin người dùng thành công.', $user);
 }
 
+if ($action === 'get-employer-profile') {
+    $uid = getUserIdFromToken();
+    if (!$uid) {
+        sendJsonResponse(false, 'Bạn cần đăng nhập.', [], 401);
+    }
+
+    $db = getDatabaseConnection();
+    $stmt = $db->prepare("
+        SELECT full_name, email, company, industry, phone, address, bio, website, company_size
+        FROM users
+        WHERE id = ? LIMIT 1
+    ");
+    $stmt->execute([$uid]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        sendJsonResponse(false, 'Không tìm thấy thông tin.', [], 404);
+    }
+
+    sendJsonResponse(true, 'Lấy thông tin công ty thành công.', $user);
+}
+
 if ($action === 'get-jobs-by-industry') {
     $uid = getUserIdFromToken();
     if (!$uid) {
