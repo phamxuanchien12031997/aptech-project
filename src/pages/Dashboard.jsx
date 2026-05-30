@@ -62,7 +62,7 @@ const EmptyState = ({ icon, title, sub }) => (
 );
 
 // ─── API helper ──────────────────────────────────────────────
-const API = '/server/index.php';
+import API from '../api';
 function authHeaders() {
     return { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') };
 }

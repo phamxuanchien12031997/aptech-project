@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginModal from './LoginModal';
 
-const API = '/server/index.php';
+import API from '../../api';
 
 const JobCard = ({ job, initialSaved = false, onUnsave }) => {
     const navigate = useNavigate();

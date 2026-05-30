@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import API from '../../api';
 
 const workTypes = [
     {
@@ -84,9 +85,9 @@ const sendFiltersToBackend = async (workType, level, locationName, onFilter) => 
     let url;
 
     if (queryString === '') {
-        url = '/server/index.php?action=get-jobs';
+        url = API + '?action=get-jobs';
     } else {
-        url = '/server/index.php?action=get-jobs&' + queryString;
+        url = API + '?action=get-jobs&' + queryString;
     }
 
     try {

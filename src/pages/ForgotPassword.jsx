@@ -7,7 +7,7 @@ import Logo from '../assets/img/Logo.png';
 // The base URL for all API calls.
 // Every fetch goes to /server/index.php with a different ?action= param.
 
-const API = '/server/index.php';
+import API from '../api';
 
 // COMPONENT: SpinnerIcon
 // A small spinning SVG shown inside buttons while a request is in progress.

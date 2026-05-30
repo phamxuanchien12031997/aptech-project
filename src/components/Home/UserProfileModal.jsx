@@ -10,7 +10,7 @@ const CATEGORIES = [
     'Dịch vụ khách hàng',
 ];
 
-const API = '/server/index.php';
+import API from '../../api';
 
 const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
     const [profile, setProfile] = useState({

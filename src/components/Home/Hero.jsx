@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API = '/server/index.php';
+import API from '../../api';
 
 const Hero = ({ onSearch }) => {
     const [keyword, setKeyword] = useState('');

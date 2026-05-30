@@ -3,7 +3,7 @@ import Header from '../components/Home/Header';
 import Footer from '../components/Home/Footer';
 
 const MAPS_EMBED = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3723.924408763377!2d105.8164289759182!3d21.035710387538565!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab0d6e603741%3A0x208a848932ac2109!2sAptech%20Computer%20Education!5e0!3m2!1sen!2s!4v1779798969515!5m2!1sen!2s"
-const API = '/server/index.php';
+import API from '../api';
 
 const StarRating = ({ rating, setRating }) => {
     const [hovered, setHovered] = useState(0);

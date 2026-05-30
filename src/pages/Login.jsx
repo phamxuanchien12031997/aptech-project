@@ -4,7 +4,7 @@ import axios from 'axios';
 import Logo from '../assets/img/Logo.png';
 
 // CONFIG
-const API = '/server/index.php';
+import API from '../api';
 
 // COMPONENT: SpinnerIcon
 function SpinnerIcon() {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 
-const API = '/server/index.php';
+import API from '../../api';
 
 const SavedJobsModal = ({ isOpen, onClose }) => {
     const [savedJobs, setSavedJobs] = useState([]);

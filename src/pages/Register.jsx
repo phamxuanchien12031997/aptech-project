@@ -7,7 +7,7 @@ import Logo from '../assets/img/Logo.png';
 // The base URL for all API calls.
 // Every fetch goes to /server/index.php with a different ?action= param.
 
-const API = '/server/index.php';
+import API from '../api';;
 
 // DATA: INDUSTRIES
 // The dropdown options shown to job-seekers in Step 2.

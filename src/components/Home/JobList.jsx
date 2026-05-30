@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 
-const API = '/server/index.php';
+import API from '../../api';
 
 // Fetch the set of job IDs the logged-in user has already saved.
 // Returns an empty Set if the user is not logged in or the request fails.

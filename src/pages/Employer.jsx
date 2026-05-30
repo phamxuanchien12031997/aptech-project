@@ -1490,7 +1490,7 @@ function CompanyTab({ onCompanyNameChange }) {
         var token = localStorage.getItem('token');
         if (!token) { setLoading(false); return; }
 
-        fetch('/server/index.php?action=get-employer-profile', {
+        fetch(API + '?action=get-employer-profile', {
             headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
         })
             .then(function (r) { return r.json(); })
@@ -1519,7 +1519,7 @@ function CompanyTab({ onCompanyNameChange }) {
 
         var token = localStorage.getItem('token');
         try {
-            var res = await fetch('/server/index.php?action=update-employer-profile', {
+            var res = await fetch(API + '?action=update-employer-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({
@@ -1656,7 +1656,7 @@ function CompanyTab({ onCompanyNameChange }) {
 // Holds the top-level state (jobs, candidates, active tab)
 // and renders the sidebar + the currently active tab panel.
 
-const API = '/server/index.php';
+import API from '../api';
 
 export default function EmployerDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
