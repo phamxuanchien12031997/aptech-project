@@ -1,4 +1,6 @@
 <?php
+error_reporting(0);
+ini_set("display_errors", "0");
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: http://localhost:3000');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
@@ -704,6 +706,10 @@ if ($action === 'login') {
         sendJsonResponse(false, 'Email hoặc mật khẩu không đúng.', [], 401);
     }
 
+    if ($user['status'] === 'suspended') {
+        sendJsonResponse(false, 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.', [], 403);
+    }
+
     $tokenPayload = [
         'id' => $user['id'],
         'email' => $user['email'],
@@ -1018,7 +1024,6 @@ if ($action === 'contact') {
         sendJsonResponse(false, 'Email không hợp lệ.', [], 400);
     }
 
-    $sent = sendOtpByEmail(MAIL_FROM, '');
     $phpMailerFolder = __DIR__ . '/PHPMailer/src/';
     $phpMailerExists = file_exists($phpMailerFolder . 'PHPMailer.php');
 

@@ -267,8 +267,25 @@ function StepInfo({ onNext }) {
         }
         const reader = new FileReader();
         reader.onload = function (ev) {
-            setAvatarPreview(ev.target.result);
-            setAvatarBase64(ev.target.result);
+            const img = new Image();
+            img.onload = function () {
+                // Resize to max 400×400 to keep the base64 payload small
+                const MAX = 400;
+                let w = img.width;
+                let h = img.height;
+                if (w > MAX || h > MAX) {
+                    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                    else { w = Math.round(w * MAX / h); h = MAX; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                const resized = canvas.toDataURL('image/jpeg', 0.8);
+                setAvatarPreview(resized);
+                setAvatarBase64(resized);
+            };
+            img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
     }

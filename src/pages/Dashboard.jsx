@@ -73,7 +73,14 @@ async function apiFetch(action, opts = {}) {
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: opts.body ? JSON.stringify(opts.body) : undefined,
     });
-    return res.json();
+    const text = await res.text();
+    try {
+        return JSON.parse(text);
+    } catch {
+        const jsonStart = text.indexOf('{');
+        if (jsonStart > 0) return JSON.parse(text.slice(jsonStart));
+        throw new Error('Invalid response: ' + text.slice(0, 200));
+    }
 }
 
 // ─── Toast ───────────────────────────────────────────────────
@@ -308,10 +315,25 @@ const UsersTab = ({ toast }) => {
     });
 
     async function toggleLock(u) {
-        const s = u.status === 'active' ? 'locked' : 'active';
-        const r = await apiFetch('admin-update-user', { method: 'POST', body: { id: u.id, status: s } });
-        if (r.success) { toast(s === 'locked' ? '🔒 Đã khóa tài khoản' : '🔓 Đã mở khóa', 'success'); load(); }
-        else toast(r.message || 'Lỗi', 'error');
+        const newStatus = u.status === 'active' ? 'suspended' : 'active';
+        // Optimistic update — flip the button immediately so the UI responds right away
+        setUsers(prev => prev.map(x => x.id === u.id ? { ...x, status: newStatus } : x));
+        try {
+            const r = await apiFetch('admin-update-user', { method: 'POST', body: { id: u.id, status: newStatus } });
+            if (r.success) {
+                toast(newStatus === 'suspended' ? '🔒 Đã khóa tài khoản' : '🔓 Đã mở khóa', 'success');
+                load();
+            } else {
+                // Revert on failure
+                setUsers(prev => prev.map(x => x.id === u.id ? { ...x, status: u.status } : x));
+                toast(r.message || 'Cập nhật thất bại', 'error');
+            }
+        } catch (err) {
+            // Revert on network error
+            setUsers(prev => prev.map(x => x.id === u.id ? { ...x, status: u.status } : x));
+            console.error('toggleLock error:', err);
+            toast('Lỗi: ' + (err.message || String(err)), 'error');
+        }
     }
     async function deleteUser() {
         const r = await apiFetch('admin-delete-user', { method: 'POST', body: { id: confirmDel.id } });
@@ -408,7 +430,7 @@ const UsersTab = ({ toast }) => {
                         <div>{getFieldLabel("Trạng thái")}
                             <select value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))} style={{ ...inputStyle }}>
                                 <option value="active">Hoạt động</option>
-                                <option value="locked">Bị khóa</option>
+                                <option value="suspended">Bị khóa</option>
                             </select>
                         </div>
                         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
