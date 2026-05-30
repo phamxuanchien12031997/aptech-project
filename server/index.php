@@ -17,8 +17,8 @@ define('DB_PASS', '');
 define('MAIL_HOST', 'smtp.gmail.com');
 define('MAIL_PORT', 587);
 // ⚠️ UPDATE THESE WITH REAL CREDENTIALS
-define('MAIL_USER', 'your-email@gmail.com');
-define('MAIL_PASS', 'ccjd yrhe dedu uzmx');
+define('MAIL_USER', 'tri.td.2777@aptechlearning.edu.vn');
+define('MAIL_PASS', 'kzez sufv tiet fypf');
 define('MAIL_FROM', 'noreply@jobhot.vn');
 define('MAIL_FROM_NAME', 'JobHot');
 define('JWT_SECRET', 'JOBHOT_SECRET_KEY_2026_CHANGE_IN_PROD');
