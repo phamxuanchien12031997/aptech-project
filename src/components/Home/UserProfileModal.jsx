@@ -28,6 +28,7 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
         bio: '',
     });
     const [cvFile, setCvFile] = useState(null);
+    const [existingCvName, setExistingCvName] = useState(null);
     const [saved, setSaved] = useState(false);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -79,6 +80,9 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
                     jobType: 'Full-time', // This field is not in DB yet
                     bio: user.bio || '',
                 });
+                if (user.cv_name) {
+                    setExistingCvName(user.cv_name);
+                }
             } else {
                 // If no profile data, use default values with userName and userEmail
                 setProfile(prev => ({
@@ -348,6 +352,12 @@ const UserProfileModal = ({ isOpen, onClose, userName, userEmail }) => {
                                                 <div className="text-2xl">📄</div>
                                                 <div className="text-purple-600 font-medium text-sm">{cvFile.name}</div>
                                                 <div className="text-xs text-gray-400">{(cvFile.size / 1024).toFixed(0)} KB — nhấn để đổi file</div>
+                                            </div>
+                                        ) : existingCvName ? (
+                                            <div className="flex flex-col items-center gap-1">
+                                                <div className="text-2xl">📄</div>
+                                                <div className="text-green-600 font-medium text-sm">{existingCvName}</div>
+                                                <div className="text-xs text-gray-400">CV hiện tại — nhấn để thay thế</div>
                                             </div>
                                         ) : (
                                             <>

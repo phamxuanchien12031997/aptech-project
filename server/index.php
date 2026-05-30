@@ -237,37 +237,44 @@ if ($action === 'get-jobs') {
     $levelFilter = isset($_GET['level']) ? trim($_GET['level']) : '';
     $locationFilter = isset($_GET['location']) ? trim($_GET['location']) : '';
     $keywordFilter = isset($_GET['keyword']) ? trim($_GET['keyword']) : '';
+    $categoryFilter = isset($_GET['category']) ? trim($_GET['category']) : '';
 
     $sql = "
-		SELECT * 
-        FROM jobs
+		SELECT j.*, c.name as category_name, c.icon as category_icon
+        FROM jobs j
+        LEFT JOIN categories c ON c.id = j.category_id
 		WHERE 1 = 1
 	";
 
     $queryParams = [];
 
     if ($keywordFilter !== '') {
-        $sql .= " AND (title LIKE ? OR company LIKE ?)";
+        $sql .= " AND (j.title LIKE ? OR j.company LIKE ?)";
         $queryParams[] = '%' . $keywordFilter . '%';
         $queryParams[] = '%' . $keywordFilter . '%';
     }
 
     if ($workTypeFilter !== '') {
-        $sql .= " AND work_type = ?";
+        $sql .= " AND j.work_type = ?";
         $queryParams[] = $workTypeFilter;
     }
 
     if ($levelFilter !== '') {
-        $sql .= " AND level = ?";
+        $sql .= " AND j.level = ?";
         $queryParams[] = $levelFilter;
     }
 
     if ($locationFilter !== '') {
-        $sql .= " AND location LIKE ?";
+        $sql .= " AND j.location LIKE ?";
         $queryParams[] = '%' . $locationFilter . '%';
     }
 
-    $sql .= " ORDER BY created_at DESC";
+    if ($categoryFilter !== '') {
+        $sql .= " AND c.name = ?";
+        $queryParams[] = $categoryFilter;
+    }
+
+    $sql .= " ORDER BY j.created_at DESC";
     $statement = getDatabaseConnection()->prepare($sql);
     $statement->execute($queryParams);
     $jobs = $statement->fetchAll();
@@ -565,7 +572,7 @@ if ($action === 'get-user-profile') {
     $db = getDatabaseConnection();
     $stmt = $db->prepare("
         SELECT id, full_name, email, phone, dob, gender, address, 
-               position, experience, skills, industry, bio, education, avatar
+               position, experience, skills, industry, bio, education, avatar, cv_name
         FROM users
         WHERE id = ?
         LIMIT 1
@@ -1396,6 +1403,16 @@ if ($action === 'update-profile') {
         $fields['avatar'] = $avatar;
     }
 
+    // Save CV as base64 in the database if provided
+    if ($cvBase64 !== null) {
+        $cvName = isset($body['cvName']) ? trim($body['cvName']) : 'cv.pdf';
+        // Limit CV size to ~10MB base64
+        if (strlen($cvBase64) <= 14000000) {
+            $fields['cv_data'] = $cvBase64;
+            $fields['cv_name'] = $cvName;
+        }
+    }
+
     $setClauses = implode(', ', array_map(fn($k) => "$k = ?", array_keys($fields)));
     $values     = array_values($fields);
     $values[]   = $uid;
@@ -1403,7 +1420,7 @@ if ($action === 'update-profile') {
     $db->prepare("UPDATE users SET $setClauses WHERE id = ?")->execute($values);
 
     // Fetch updated user to return fresh data
-    $fresh = $db->prepare("SELECT full_name, email, avatar, industry, position FROM users WHERE id = ? LIMIT 1");
+    $fresh = $db->prepare("SELECT full_name, email, avatar, industry, position, cv_name FROM users WHERE id = ? LIMIT 1");
     $fresh->execute([$uid]);
     $user = $fresh->fetch();
 
@@ -1413,6 +1430,7 @@ if ($action === 'update-profile') {
         'avatar'   => $user['avatar'] ?? null,
         'industry' => $user['industry'] ?? null,
         'position' => $user['position'] ?? null,
+        'cv_name'  => $user['cv_name'] ?? null,
     ]);
 }
 

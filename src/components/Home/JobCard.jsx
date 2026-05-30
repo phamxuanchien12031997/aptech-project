@@ -4,9 +4,9 @@ import LoginModal from './LoginModal';
 
 const API = '/server/index.php';
 
-const JobCard = ({ job }) => {
+const JobCard = ({ job, initialSaved = false, onUnsave }) => {
     const navigate = useNavigate();
-    const [saved, setSaved] = useState(false);
+    const [saved, setSaved] = useState(initialSaved);
     const [showLoginModal, setShowLoginModal] = useState(false);
 
     let urgent = false;
@@ -39,7 +39,12 @@ const JobCard = ({ job }) => {
                 },
                 body: JSON.stringify({ job_id: job.id }),
             });
-            setSaved(!saved);
+            const newSaved = !saved;
+            setSaved(newSaved);
+            // If we just unsaved and there's a callback, notify parent
+            if (!newSaved && onUnsave) {
+                onUnsave(job.id);
+            }
         } catch (error) {
             console.error('Error saving job:', error);
         }

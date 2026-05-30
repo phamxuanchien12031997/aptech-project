@@ -47,7 +47,7 @@ const HomePage = () => {
                     <Sidebar onFilter={handleFilter} />
 
                     {/* JobList receives the filtered results (or null for default list) */}
-                    <JobList filteredJobs={filteredJobs} />
+                    <JobList filteredJobs={filteredJobs} onFilter={handleFilter} />
 
                 </div>
             </div>

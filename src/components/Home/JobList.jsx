@@ -3,6 +3,24 @@ import JobCard from './JobCard';
 
 const API = '/server/index.php';
 
+// Fetch the set of job IDs the logged-in user has already saved.
+// Returns an empty Set if the user is not logged in or the request fails.
+const fetchSavedJobIds = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return new Set();
+    try {
+        const res = await fetch(API + '?action=get-saved-jobs', {
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.success) {
+            const jobs = data.data?.jobs || data.jobs || [];
+            return new Set(jobs.map(j => j.id));
+        }
+    } catch (_) {}
+    return new Set();
+};
+
 const SectionHeader = ({ title, link }) => {
     return (
         <div className="flex justify-between items-center mb-5">
@@ -16,7 +34,7 @@ const SectionHeader = ({ title, link }) => {
     );
 };
 
-const FilteredResults = ({ jobs }) => {
+const FilteredResults = ({ jobs, savedIds }) => {
     if (jobs.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -38,14 +56,14 @@ const FilteredResults = ({ jobs }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {jobs.map((job) => {
-                    return <JobCard key={job.id} job={job} />;
+                    return <JobCard key={job.id} job={job} initialSaved={savedIds.has(job.id)} />;
                 })}
             </div>
         </div>
     );
 };
 
-const DefaultResults = () => {
+const DefaultResults = ({ onFilter, savedIds }) => {
     const [jobs, setJobs] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -107,6 +125,20 @@ const DefaultResults = () => {
 
     const featuredJobs = jobs.slice(0, 3);
 
+    const handleCategoryClick = async (categoryLabel) => {
+        try {
+            const url = `/server/index.php?action=get-jobs&category=${encodeURIComponent(categoryLabel)}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.success) {
+                const filtered = data.data?.jobs || data.jobs || [];
+                if (onFilter) onFilter(filtered);
+            }
+        } catch (error) {
+            console.error('Error filtering by category:', error);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center py-20">
@@ -132,7 +164,7 @@ const DefaultResults = () => {
             <div className="grid grid-cols-4 gap-3 mb-8">
                 {categories.map((cat) => {
                     return (
-                        <button key={cat.label} className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col items-center gap-2 hover:border-purple-300 hover:shadow-sm transition-all group">
+                        <button key={cat.label} onClick={() => handleCategoryClick(cat.label)} className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col items-center gap-2 hover:border-purple-300 hover:shadow-sm transition-all group cursor-pointer">
                             <span className="text-2xl">{cat.icon}</span>
                             <div className="text-xs font-semibold text-gray-700 group-hover:text-purple-700">{cat.label}</div>
                             <div className="text-xs text-gray-400">{cat.count} việc</div>
@@ -145,7 +177,7 @@ const DefaultResults = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                 {jobs.map((job) => {
-                    return <JobCard key={job.id} job={job} />;
+                    return <JobCard key={job.id} job={job} initialSaved={savedIds.has(job.id)} />;
                 })}
             </div>
 
@@ -155,7 +187,7 @@ const DefaultResults = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {featuredJobs.map((job) => {
-                            return <JobCard key={job.id} job={job} />;
+                            return <JobCard key={job.id} job={job} initialSaved={savedIds.has(job.id)} />;
                         })}
                     </div>
                 </>
@@ -164,13 +196,19 @@ const DefaultResults = () => {
     );
 };
 
-const JobList = ({ filteredJobs }) => {
+const JobList = ({ filteredJobs, onFilter }) => {
+    const [savedIds, setSavedIds] = useState(new Set());
+
+    useEffect(() => {
+        fetchSavedJobIds().then(ids => setSavedIds(ids));
+    }, []);
+
     let content;
 
     if (filteredJobs === null) {
-        content = <DefaultResults />;
+        content = <DefaultResults onFilter={onFilter} savedIds={savedIds} />;
     } else {
-        content = <FilteredResults jobs={filteredJobs} />;
+        content = <FilteredResults jobs={filteredJobs} savedIds={savedIds} />;
     }
 
     return (
