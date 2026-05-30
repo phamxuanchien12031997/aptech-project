@@ -2,7 +2,7 @@
 error_reporting(0);
 ini_set("display_errors", "0");
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Origin: https://aptech-project-steel.vercel.app');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true');
@@ -12,10 +12,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'jobhot');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', 'sql_host_from_infinityfree');
+define('DB_NAME', 'your_db_name');
+define('DB_USER', 'your_db_user');
+define('DB_PASS', 'your_db_password');
 define('MAIL_HOST', 'smtp.gmail.com');
 define('MAIL_PORT', 587);
 // ⚠️ UPDATE THESE WITH REAL CREDENTIALS
@@ -23,7 +23,7 @@ define('MAIL_USER', 'tri.td.2777@aptechlearning.edu.vn');
 define('MAIL_PASS', 'kzez sufv tiet fypf');
 define('MAIL_FROM', 'noreply@jobhot.vn');
 define('MAIL_FROM_NAME', 'JobHot');
-define('JWT_SECRET', 'JOBHOT_SECRET_KEY_2026_CHANGE_IN_PROD');
+define('JWT_SECRET', 'MyJobHot$Secret#2026!XyZ9q2rPmW');
 define('ADMIN_EMAIL', 'admin@jobhot.vn');
 define('ADMIN_NAME', 'Quản trị viên JobHot');
 // ⚠️ ADD THIS: Verification token expiry (30 minutes)
