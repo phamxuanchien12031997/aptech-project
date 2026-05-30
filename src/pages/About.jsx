@@ -3,6 +3,7 @@ import Header from '../components/Home/Header';
 import Footer from '../components/Home/Footer';
 
 const AboutPage = () => {
+    const isLoggedIn = !!localStorage.getItem('token');
     const stats = [
         {
             value: '40,000+',
@@ -144,6 +145,7 @@ const AboutPage = () => {
                     })}
                 </div>
 
+                {!isLoggedIn && (
                 <div className="bg-linear-to-r from-purple-600 to-purple-500 rounded-2xl p-8 text-center text-white">
                     <h2 className="text-xl font-bold mb-2">Sẵn sàng bắt đầu hành trình của bạn?</h2>
                     <p className="text-purple-200 text-sm mb-5">Đăng ký miễn phí và khám phá hàng ngàn cơ hội việc là</p>
@@ -154,6 +156,7 @@ const AboutPage = () => {
                         <Link to="/contact" className="px-6 py-2.5 border border-white/40 text-white font-semibold rounded-lg text-sm hover:bg-white/10 transition-colors no-underline">Liên hệ</Link>
                     </div>
                 </div>
+                )}
             </div>
             <Footer />
         </div>
