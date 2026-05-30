@@ -1,16 +1,32 @@
 <?php
+// ── CORS — must be the very first thing, before any output ──────────────────
+$allowed_origin = 'https://aptech-project-steel.vercel.app';
+
+// Always send CORS headers on every response
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    if ($_SERVER['HTTP_ORIGIN'] === $allowed_origin) {
+        header('Access-Control-Allow-Origin: ' . $allowed_origin);
+    }
+} else {
+    // No Origin header (direct server call) — allow it
+    header('Access-Control-Allow-Origin: ' . $allowed_origin);
+}
+
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Max-Age: 86400'); // cache preflight for 24h
+
+// Handle preflight OPTIONS request immediately — no DB, no logic
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+// ── End CORS ────────────────────────────────────────────────────────────────
+
 error_reporting(0);
 ini_set("display_errors", "0");
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: https://aptech-project-steel.vercel.app');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Credentials: true');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
 
 define('DB_HOST', 'sql213.infinityfree.com');
 define('DB_NAME', 'if0_42052573_jobhot');
