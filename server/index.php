@@ -608,7 +608,6 @@ if ($action === 'get-employer-profile') {
 
     sendJsonResponse(true, 'Lấy thông tin công ty thành công.', $user);
 }
-
 if ($action === 'get-jobs-by-industry') {
     $uid = getUserIdFromToken();
     if (!$uid) {
@@ -711,6 +710,41 @@ if (!is_array($body)) {
     sendJsonResponse(false, 'Body JSON không hợp lệ.', [], 400);
 }
 
+
+if ($action === 'update-employer-profile') {
+    $uid = getUserIdFromToken();
+    if (!$uid) {
+        sendJsonResponse(false, 'Bạn cần đăng nhập.', [], 401);
+    }
+
+    $db      = getDatabaseConnection();
+    $company = trim($body['company'] ?? '');
+    $email   = trim($body['email']   ?? '');
+    $phone   = trim($body['phone']   ?? '');
+    $address = trim($body['address'] ?? '');
+    $website = trim($body['website'] ?? '');
+    $size    = trim($body['company_size'] ?? '');
+    $industry = trim($body['industry'] ?? '');
+    $bio     = trim($body['bio']     ?? '');
+
+    if ($company === '') {
+        sendJsonResponse(false, 'Tên công ty không được để trống.', [], 400);
+    }
+
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        sendJsonResponse(false, 'Email không hợp lệ.', [], 400);
+    }
+
+    $db->prepare("
+        UPDATE users
+        SET company = ?, email = ?, phone = ?, address = ?, website = ?,
+            company_size = ?, industry = ?, bio = ?
+        WHERE id = ?
+    ")->execute([$company, $email, $phone, $address, $website, $size, $industry, $bio, $uid]);
+
+    sendJsonResponse(true, 'Cập nhật thông tin công ty thành công.');
+}
+
 if ($action === 'login') {
     $email = trim(isset($body['email']) ? $body['email'] : '');
 
@@ -733,6 +767,10 @@ if ($action === 'login') {
 
     if (!$passwordIsCorrect) {
         sendJsonResponse(false, 'Email hoặc mật khẩu không đúng.', [], 401);
+    }
+
+    if ($user['status'] === 'suspended') {
+        sendJsonResponse(false, 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.', [], 403);
     }
 
     if ($user['status'] === 'suspended') {
