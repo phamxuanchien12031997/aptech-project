@@ -12,10 +12,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-define('DB_HOST', 'sql_host_from_infinityfree');
-define('DB_NAME', 'your_db_name');
-define('DB_USER', 'your_db_user');
-define('DB_PASS', 'your_db_password');
+define('DB_HOST', 'sql213.infinityfree.com');
+define('DB_NAME', 'if0_42052573_jobhot');
+define('DB_USER', 'if0_42052573');
+define('DB_PASS', 'projectAPI123');
 define('MAIL_HOST', 'smtp.gmail.com');
 define('MAIL_PORT', 587);
 // ⚠️ UPDATE THESE WITH REAL CREDENTIALS
